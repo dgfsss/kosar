@@ -1228,6 +1228,7 @@ function normalizeLicenseRecord(row) {
     expDate,
     licKey,
     status: row.status === 'revoked' ? 'revoked' : 'active',
+    isDeleted: !!row.isDeleted,
     createdAt: row.createdAt || new Date().toISOString()
   };
 }
@@ -1345,6 +1346,7 @@ function createLicense() {
     existing.expDate = expStr;
     existing.licKey = encodedKey;
     existing.status = 'active';
+    existing.isDeleted = false;
     existing.createdAt = new Date().toISOString();
   } else {
     const client = {
@@ -1356,6 +1358,7 @@ function createLicense() {
       expDate: expStr,
       licKey: encodedKey,
       status: 'active',
+      isDeleted: false,
       createdAt: new Date().toISOString()
     };
     L.unshift(client);
@@ -1395,6 +1398,8 @@ function renewLicense(id) {
   client.expDate = expStr;
   client.licKey = encodedKey;
   client.status = 'active';
+  client.isDeleted = false;
+  client.createdAt = new Date().toISOString();
 
   saveSalesData();
   alert('لایسنس مشتری تمدید شد. کد لایسنس جدید در فیلد کپی آماده است.');
@@ -1404,9 +1409,14 @@ function renewLicense(id) {
 }
 
 function deleteLicense(id) {
-  if (!confirm('آیا مطمئن هستید که می‌خواهید مشخصات این مشتری را حذف کنید؟ این عمل غیر قابل بازگشت است.')) return;
-  L = L.filter(x => x.id !== id);
+  const client = L.find(x => x.id === id);
+  if (!client) return;
+  if (!confirm('این لایسنس به صورت امن حذف می‌شود: از لیست مدیریت پنهان خواهد شد و در رجیستری آنلاین به صورت مسدود می‌ماند تا سمت مشتری فوری قفل شود. ادامه می‌دهید؟')) return;
+  client.status = 'revoked';
+  client.isDeleted = true;
+  client.createdAt = new Date().toISOString();
   saveSalesData();
+  alert('حذف امن انجام شد. لایسنس در سمت مشتری به صورت آنلاین مسدود می‌شود.');
 }
 
 function toggleLicenseOnlineState(id) {
@@ -1597,12 +1607,13 @@ function exportOnlineRegistryJson() {
 function renderSales() {
   const q = document.getElementById('q-search').value.toLowerCase();
   const todayStr = getLocalTodayString();
+  const visible = L.filter(c => !c.isDeleted);
   
-  let list = L.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.mid.toLowerCase().includes(q));
+  let list = visible.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.mid.toLowerCase().includes(q));
   
   // Stats Calculation
   let active = 0, expired = 0, demos = 0;
-  L.forEach(c => {
+  visible.forEach(c => {
     if (todayStr > c.expDate || c.status === 'revoked') expired++;
     else {
       active++;
@@ -1610,7 +1621,7 @@ function renderSales() {
     }
   });
 
-  document.getElementById('st-total').textContent = String(L.length);
+  document.getElementById('st-total').textContent = String(visible.length);
   document.getElementById('st-active').textContent = String(active);
   document.getElementById('st-expired').textContent = String(expired);
   document.getElementById('st-demo').textContent = String(demos);

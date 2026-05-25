@@ -316,6 +316,14 @@ tr:hover td { background: rgba(59,130,246,0.03); }
           <input id="pub-path" type="text" placeholder="license-registry.json" style="direction:ltr;">
         </div>
         <div class="fgrp" style="grid-column:1 / -1;">
+          <label>Sync Bridge URL (اختیاری - حالت بدون توکن)</label>
+          <input id="pub-bridge-url" type="text" placeholder="https://your-domain/sync" style="direction:ltr;">
+        </div>
+        <div class="fgrp" style="grid-column:1 / -1;">
+          <label>Bridge Secret (اختیاری - فقط برای Sync Bridge)</label>
+          <input id="pub-bridge-secret" type="password" placeholder="bridge_secret" autocomplete="off" style="direction:ltr;">
+        </div>
+        <div class="fgrp" style="grid-column:1 / -1;">
           <label>GitHub Token (یک‌بار ثبت می‌شود و بعد خودکار استفاده می‌شود)</label>
           <input id="pub-token" type="password" placeholder="ghp_..." autocomplete="off" style="direction:ltr;">
         </div>
@@ -338,6 +346,9 @@ tr:hover td { background: rgba(59,130,246,0.03); }
         <button class="btn bp bxs" onclick="updateCheckAndFullTestOnline()">🧩 آپدیت + چک کلی + تست کلی</button>
       </div>
       <div id="pub-status" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.9;">وضعیت انتشار آنلاین: تنظیم نشده</div>
+      <div style="font-size:10.5px; color:var(--muted); margin-top:4px; line-height:1.9;">
+        اگر Sync Bridge را تنظیم کنید، انتشار بدون نیاز به GitHub Token انجام می شود.
+      </div>
 
       <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);">
         <div style="font-size:12px; color:var(--text); font-weight:700; margin-bottom:8px;">چک/آپلود آنلاین برای سازگاری با نسخه مشتری</div>
@@ -424,7 +435,9 @@ function getDefaultPublishSettings() {
     branch: 'main',
     path: 'license-registry.json',
     autoPublish: false,
-    rememberToken: true
+    rememberToken: true,
+    bridgeUrl: '',
+    bridgeSecret: ''
   };
 }
 
@@ -437,7 +450,9 @@ function getPublishSettings() {
     branch: String(raw.branch || defaults.branch).trim(),
     path: String(raw.path || defaults.path).trim(),
     autoPublish: !!raw.autoPublish,
-    rememberToken: raw.rememberToken !== false
+    rememberToken: raw.rememberToken !== false,
+    bridgeUrl: String(raw.bridgeUrl || '').trim(),
+    bridgeSecret: String(raw.bridgeSecret || '').trim()
   };
 }
 
@@ -448,7 +463,9 @@ function setPublishSettings(settings) {
     branch: String(settings.branch || 'main').trim(),
     path: String(settings.path || 'license-registry.json').trim(),
     autoPublish: !!settings.autoPublish,
-    rememberToken: settings.rememberToken !== false
+    rememberToken: settings.rememberToken !== false,
+    bridgeUrl: String(settings.bridgeUrl || '').trim(),
+    bridgeSecret: String(settings.bridgeSecret || '').trim()
   });
 }
 
@@ -484,12 +501,16 @@ function loadPublishSettingsUI() {
   const repoEl = document.getElementById('pub-repo');
   const branchEl = document.getElementById('pub-branch');
   const pathEl = document.getElementById('pub-path');
+  const bridgeEl = document.getElementById('pub-bridge-url');
+  const bridgeSecretEl = document.getElementById('pub-bridge-secret');
   const autoEl = document.getElementById('pub-auto');
   const rememberEl = document.getElementById('pub-remember-token');
   if (ownerEl) ownerEl.value = s.owner;
   if (repoEl) repoEl.value = s.repo;
   if (branchEl) branchEl.value = s.branch;
   if (pathEl) pathEl.value = s.path;
+  if (bridgeEl) bridgeEl.value = s.bridgeUrl || '';
+  if (bridgeSecretEl) bridgeSecretEl.value = s.bridgeSecret || '';
   if (autoEl) autoEl.checked = !!s.autoPublish;
   if (rememberEl) rememberEl.checked = s.rememberToken !== false;
 }
@@ -550,6 +571,8 @@ function collectPublishSettingsFromUI() {
   const repo = document.getElementById('pub-repo')?.value || '';
   const branch = document.getElementById('pub-branch')?.value || 'main';
   const path = document.getElementById('pub-path')?.value || 'license-registry.json';
+  const bridgeUrl = document.getElementById('pub-bridge-url')?.value || '';
+  const bridgeSecret = document.getElementById('pub-bridge-secret')?.value || '';
   const autoPublish = !!document.getElementById('pub-auto')?.checked;
   const rememberToken = document.getElementById('pub-remember-token')?.checked !== false;
   return {
@@ -558,7 +581,9 @@ function collectPublishSettingsFromUI() {
     branch: String(branch).trim() || 'main',
     path: String(path).trim() || 'license-registry.json',
     autoPublish,
-    rememberToken
+    rememberToken,
+    bridgeUrl: String(bridgeUrl).trim(),
+    bridgeSecret: String(bridgeSecret).trim()
   };
 }
 
@@ -600,9 +625,11 @@ async function runSmartAutoSyncOneClick() {
     tokenInput.value = '';
   }
 
-  if (!getGitHubTokenFromSession()) {
-    setPublishStatus('برای تک‌کلیک هوشمند باید GitHub Token را وارد کنید.', 'warn');
-    setOnlineCheckStatus('Token در Session ثبت نشده است. یک‌بار Token را وارد و دوباره تک‌کلیک را بزنید.', 'warn');
+  const hasToken = !!getGitHubTokenFromSession();
+  const hasBridge = !!normalizeBridgeUrl(settings.bridgeUrl);
+  if (!hasToken && !hasBridge) {
+    setPublishStatus('برای تک‌کلیک هوشمند یا Token لازم است یا Sync Bridge URL.', 'warn');
+    setOnlineCheckStatus('Token/Bridge تنظیم نشده است. یکی از این دو را یک‌بار تنظیم کنید.', 'warn');
     return;
   }
 
@@ -616,6 +643,49 @@ function getApiPath(path) {
     .filter(Boolean)
     .map(encodeURIComponent)
     .join('/');
+}
+
+function normalizeBridgeUrl(url) {
+  return String(url || '').trim().replace(/\/$/, '');
+}
+
+async function publishOnlineRegistryViaBridge(settings, registryJson) {
+  const bridgeUrl = normalizeBridgeUrl(settings.bridgeUrl);
+  if (!bridgeUrl) return false;
+  if (!navigator.onLine) {
+    setPublishStatus('اینترنت قطع است؛ ارسال به Sync Bridge انجام نشد.', 'warn');
+    return false;
+  }
+
+  try {
+    setPublishStatus('در حال انتشار رجیستری از طریق Sync Bridge...', 'info');
+    const res = await fetch(bridgeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-bridge-secret': String(settings.bridgeSecret || '')
+      },
+      body: JSON.stringify({
+        owner: settings.owner,
+        repo: settings.repo,
+        branch: settings.branch,
+        path: settings.path,
+        registryJson: String(registryJson || '')
+      })
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Bridge failed (${res.status}) ${txt.slice(0, 180)}`);
+    }
+
+    const nowFa = formatPersianDate(new Date());
+    setPublishStatus(`انتشار آنلاین با Sync Bridge موفق بود ✅ (${nowFa})`, 'ok');
+    return true;
+  } catch (e) {
+    setPublishStatus(`خطای Sync Bridge: ${String(e.message || e)}`, 'err');
+    return false;
+  }
 }
 
 function escapeHtml(text) {
@@ -680,13 +750,19 @@ async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', su
   const tokenInput = document.getElementById('pub-token');
   const inlineToken = String(tokenInput?.value || '').trim();
   const token = inlineToken || getGitHubTokenFromSession();
-  if (!token) {
-    setPublishStatus('برای انتشار آنلاین باید GitHub Token را وارد کنید.', 'warn');
-    return false;
-  }
   if (inlineToken) {
     setGitHubTokenToSession(inlineToken, settings.rememberToken !== false);
     if (tokenInput) tokenInput.value = '';
+  }
+
+  if (!token) {
+    const viaBridge = await publishOnlineRegistryViaBridge(settings, registryJson);
+    if (viaBridge) {
+      if (triggerMode === 'manual') alert(successToast);
+      return true;
+    }
+    setPublishStatus('برای انتشار مستقیم باید Token داشته باشید یا Sync Bridge URL را تنظیم کنید.', 'warn');
+    return false;
   }
 
   if (!navigator.onLine) {

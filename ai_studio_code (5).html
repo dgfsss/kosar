@@ -2146,40 +2146,55 @@ async function verifyLicenseOnline(mid, expDate, normalizedKey) {
   onlineLicenseCheckInFlight = true;
 
   try {
-    const res = await fetchFirstOnlineRegistry(ONLINE_LICENSE_URLS, 7000);
-    if (!res || !res.ok) throw new Error('registry-not-available');
-    const registry = await res.json();
-    const list = Array.isArray(registry?.licenses) ? registry.licenses : [];
-    const row = list.find(x => normalizeMid(x?.mid) === mid);
+    const expectedHash = getOnlineLicenseHash(mid, expDate, normalizedKey);
+    let fetchedAnyRegistry = false;
+    let foundRow = null;
 
-    if (!row) {
+    for (let i = 0; i < ONLINE_LICENSE_URLS.length; i++) {
+      const src = ONLINE_LICENSE_URLS[i];
+      try {
+        const res = await fetchOnlineRegistryWithTimeout(src, 7000);
+        if (!res || !res.ok) continue;
+        fetchedAnyRegistry = true;
+
+        const registry = await res.json();
+        const list = Array.isArray(registry?.licenses) ? registry.licenses : [];
+        const row = list.find(x => normalizeMid(x?.mid) === mid);
+        if (!row) continue;
+        foundRow = row;
+
+        if (String(row.status || 'active') === 'revoked') {
+          setOnlineLicenseState({ status: 'invalid', reason: 'این لایسنس توسط مدیریت مسدود شده است.', checkedAt: now, mid, expDate });
+          if (licenseValidated) enforceOnlineLicenseLock('این لایسنس توسط مدیریت مسدود شده است.');
+          return;
+        }
+
+        if (String(row.expDate || '') !== expDate) {
+          setOnlineLicenseState({ status: 'invalid', reason: 'تاریخ انقضای آنلاین با کلید شما مطابقت ندارد.', checkedAt: now, mid, expDate });
+          if (licenseValidated) enforceOnlineLicenseLock('تاریخ انقضای آنلاین با کلید فعلی سازگار نیست.');
+          return;
+        }
+
+        if (row.licenseHash && String(row.licenseHash) !== expectedHash) {
+          setOnlineLicenseState({ status: 'invalid', reason: 'امضای آنلاین لایسنس نامعتبر است.', checkedAt: now, mid, expDate });
+          if (licenseValidated) enforceOnlineLicenseLock('امضای آنلاین لایسنس معتبر نیست.');
+          return;
+        }
+
+        setOnlineLicenseState({ status: 'valid', reason: '', checkedAt: now, mid, expDate });
+        return;
+      } catch (e) {
+        // Try next source.
+      }
+    }
+
+    if (fetchedAnyRegistry && !foundRow) {
       setOnlineLicenseState({ status: 'invalid', reason: 'این MID در رجیستری آنلاین ثبت نشده است.', checkedAt: now, mid, expDate });
       if (licenseValidated) enforceOnlineLicenseLock('این دستگاه در سامانه فروش ثبت نشده است.');
       return;
     }
 
-    if (String(row.status || 'active') === 'revoked') {
-      setOnlineLicenseState({ status: 'invalid', reason: 'این لایسنس توسط مدیریت مسدود شده است.', checkedAt: now, mid, expDate });
-      if (licenseValidated) enforceOnlineLicenseLock('این لایسنس توسط مدیریت مسدود شده است.');
-      return;
-    }
-
-    if (String(row.expDate || '') !== expDate) {
-      setOnlineLicenseState({ status: 'invalid', reason: 'تاریخ انقضای آنلاین با کلید شما مطابقت ندارد.', checkedAt: now, mid, expDate });
-      if (licenseValidated) enforceOnlineLicenseLock('تاریخ انقضای آنلاین با کلید فعلی سازگار نیست.');
-      return;
-    }
-
-    if (row.licenseHash) {
-      const expectedHash = getOnlineLicenseHash(mid, expDate, normalizedKey);
-      if (String(row.licenseHash) !== expectedHash) {
-        setOnlineLicenseState({ status: 'invalid', reason: 'امضای آنلاین لایسنس نامعتبر است.', checkedAt: now, mid, expDate });
-        if (licenseValidated) enforceOnlineLicenseLock('امضای آنلاین لایسنس معتبر نیست.');
-        return;
-      }
-    }
-
-    setOnlineLicenseState({ status: 'valid', reason: '', checkedAt: now, mid, expDate });
+    if (!fetchedAnyRegistry) throw new Error('registry-not-available');
   } catch (e) {
     // In offline/unstable network, keep app usable based on local signed license.
     setOnlineLicenseState({ status: 'unknown', reason: 'در حال حاضر ارتباط با رجیستری آنلاین ممکن نیست.', checkedAt: now, mid, expDate });

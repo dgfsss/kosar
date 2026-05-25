@@ -8,7 +8,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <title>سامانه مدیریت و حسابداری اقساط بیمه</title>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --c0:#05152b;--c1:#0b2d52;--c2:#1257a0;--c3:#1a72cc;
@@ -1007,7 +1006,8 @@ const LS_KEYS = {
   machineId: 'kt3_mid',
   license: 'kt3_lic',
   lastOpened: 'kt3_last_opened',
-  licenseFailState: 'kt3_lic_fail_state'
+  licenseFailState: 'kt3_lic_fail_state',
+  onlineLicenseState: 'kt3_online_lic_state'
 };
 
 const memStore = {};
@@ -1066,6 +1066,14 @@ let S = StorageSafe.getJSON(LS_KEYS.settings, {"brokerName":"مدیریت بیم
 let editId = null;
 let activeContractInsts = null; 
 let licenseValidated = false;
+const ONLINE_LICENSE_URLS = [
+  './license-registry.json',
+  'https://dgfsss.github.io/kosar/license-registry.json',
+  'https://raw.githubusercontent.com/dgfsss/kosar/main/license-registry.json'
+];
+const ONLINE_SYNC_MIN_INTERVAL = 30 * 1000;
+let onlineLicenseCheckInFlight = false;
+let onlineLicenseLastAttemptAt = 0;
 const jalaliPickerState = { inputEl: null, year: 0, month: 0 };
 const PAGES = ['dashboard','add','customers','installments','alerts','notes','search','recovery','settings','accounting'];
 
@@ -2069,6 +2077,117 @@ function genChecksum(mac, exp) {
   return Math.abs(hash).toString(36).toUpperCase();
 }
 
+function getOnlineLicenseState() {
+  return StorageSafe.getJSON(LS_KEYS.onlineLicenseState, {
+    status: 'unknown',
+    reason: '',
+    checkedAt: 0,
+    mid: '',
+    expDate: ''
+  });
+}
+
+function setOnlineLicenseState(nextState) {
+  StorageSafe.setJSON(LS_KEYS.onlineLicenseState, {
+    status: String(nextState.status || 'unknown'),
+    reason: String(nextState.reason || ''),
+    checkedAt: Number(nextState.checkedAt || Date.now()),
+    mid: String(nextState.mid || ''),
+    expDate: String(nextState.expDate || '')
+  });
+}
+
+function getOnlineLicenseHash(mid, expDate, normalizedKey) {
+  return genChecksum(mid, `${expDate}:${String(normalizedKey || '').trim()}`);
+}
+
+function enforceOnlineLicenseLock(reasonText) {
+  const container = document.getElementById('app-container');
+  licenseValidated = false;
+  if (container) container.style.display = 'none';
+  showLicOverlay(`⛔ تایید آنلاین لایسنس ناموفق بود.<br>${reasonText || 'لایسنس در رجیستری آنلاین معتبر نیست.'}`);
+}
+
+function fetchOnlineRegistryWithTimeout(url, timeoutMs) {
+  if (!window.fetch) return Promise.reject(new Error('fetch-not-supported'));
+  if (window.AbortController) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    return fetch(url, { cache: 'no-store', signal: ctrl.signal })
+      .finally(() => clearTimeout(timer));
+  }
+  return Promise.race([
+    fetch(url, { cache: 'no-store' }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
+  ]);
+}
+
+async function fetchFirstOnlineRegistry(urls, timeoutMs) {
+  const list = Array.isArray(urls) ? urls.filter(Boolean) : [];
+  let lastErr = new Error('registry-not-available');
+  for (let i = 0; i < list.length; i++) {
+    try {
+      const res = await fetchOnlineRegistryWithTimeout(list[i], timeoutMs);
+      if (res && res.ok) return res;
+      lastErr = new Error('registry-not-available');
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
+async function verifyLicenseOnline(mid, expDate, normalizedKey) {
+  if (!window.fetch || !navigator.onLine) return;
+  const now = Date.now();
+  if (onlineLicenseCheckInFlight) return;
+  if (now - onlineLicenseLastAttemptAt < ONLINE_SYNC_MIN_INTERVAL) return;
+  onlineLicenseLastAttemptAt = now;
+  onlineLicenseCheckInFlight = true;
+
+  try {
+    const res = await fetchFirstOnlineRegistry(ONLINE_LICENSE_URLS, 7000);
+    if (!res || !res.ok) throw new Error('registry-not-available');
+    const registry = await res.json();
+    const list = Array.isArray(registry?.licenses) ? registry.licenses : [];
+    const row = list.find(x => normalizeMid(x?.mid) === mid);
+
+    if (!row) {
+      setOnlineLicenseState({ status: 'invalid', reason: 'این MID در رجیستری آنلاین ثبت نشده است.', checkedAt: now, mid, expDate });
+      if (licenseValidated) enforceOnlineLicenseLock('این دستگاه در سامانه فروش ثبت نشده است.');
+      return;
+    }
+
+    if (String(row.status || 'active') === 'revoked') {
+      setOnlineLicenseState({ status: 'invalid', reason: 'این لایسنس توسط مدیریت مسدود شده است.', checkedAt: now, mid, expDate });
+      if (licenseValidated) enforceOnlineLicenseLock('این لایسنس توسط مدیریت مسدود شده است.');
+      return;
+    }
+
+    if (String(row.expDate || '') !== expDate) {
+      setOnlineLicenseState({ status: 'invalid', reason: 'تاریخ انقضای آنلاین با کلید شما مطابقت ندارد.', checkedAt: now, mid, expDate });
+      if (licenseValidated) enforceOnlineLicenseLock('تاریخ انقضای آنلاین با کلید فعلی سازگار نیست.');
+      return;
+    }
+
+    if (row.licenseHash) {
+      const expectedHash = getOnlineLicenseHash(mid, expDate, normalizedKey);
+      if (String(row.licenseHash) !== expectedHash) {
+        setOnlineLicenseState({ status: 'invalid', reason: 'امضای آنلاین لایسنس نامعتبر است.', checkedAt: now, mid, expDate });
+        if (licenseValidated) enforceOnlineLicenseLock('امضای آنلاین لایسنس معتبر نیست.');
+        return;
+      }
+    }
+
+    setOnlineLicenseState({ status: 'valid', reason: '', checkedAt: now, mid, expDate });
+  } catch (e) {
+    // In offline/unstable network, keep app usable based on local signed license.
+    setOnlineLicenseState({ status: 'unknown', reason: 'در حال حاضر ارتباط با رجیستری آنلاین ممکن نیست.', checkedAt: now, mid, expDate });
+  } finally {
+    onlineLicenseCheckInFlight = false;
+  }
+}
+
 function checkLic() {
   const mid = normalizeMid(getMachineID());
   const lic = StorageSafe.getText(LS_KEYS.license, '');
@@ -2143,11 +2262,17 @@ function checkLic() {
       return hideAndFail(`🔴 لایسنس شما منقضی شده است!<br>تاریخ انقضا: ${fdate(expDate)} بوده است.`);
     }
 
+    const onlineState = getOnlineLicenseState();
+    if (navigator.onLine && onlineState.status === 'invalid' && onlineState.mid === keyMid && onlineState.expDate === expDate) {
+      return hideAndFail(`⛔ تایید آنلاین لایسنس ناموفق است.<br>${onlineState.reason || 'این لایسنس در رجیستری آنلاین معتبر نیست.'}`);
+    }
+
     licenseValidated = true;
     clearLicFailState();
     if (overlay) overlay.style.display = 'none';
     if (container) container.style.display = 'block'; // Reveal app DOM
     updateSidebarLicenseInfo(expDate);
+    verifyLicenseOnline(keyMid, expDate, sanitizedKey);
     return true;
   } catch (e) {
     return registerLicenseFailure(hideAndFail, "❌ لایسنس نامعتبر است.<br>لطفا یک لایسنس معتبر وارد کنید.");
@@ -2253,6 +2378,15 @@ function updateSettingsLicensePanel() {
     }
   } catch (e) {
     statusEl.innerHTML = 'وضعیت لایسنس: <strong style="color:var(--red)">نامعتبر</strong>';
+  }
+
+  const onlineState = getOnlineLicenseState();
+  if (onlineState.status === 'valid') {
+    statusEl.innerHTML += '<br><small style="color:var(--green)">تایید آنلاین: معتبر ✅</small>';
+  } else if (onlineState.status === 'invalid') {
+    statusEl.innerHTML += `<br><small style="color:var(--red)">تایید آنلاین: نامعتبر ⛔ (${onlineState.reason || 'خطای رجیستری'})</small>`;
+  } else {
+    statusEl.innerHTML += '<br><small style="color:var(--muted)">تایید آنلاین: در دسترس نبود (اجرا با اعتبارسنجی آفلاین)</small>';
   }
 
   if (fail.lockUntil && Date.now() < fail.lockUntil) {
@@ -2852,9 +2986,14 @@ window.addEventListener('pageshow', () => {
 });
 
 window.addEventListener('storage', (e) => {
-  if (e.key === 'kt3_lic' || e.key === 'kt3_mid' || e.key === 'kt3_last_opened') {
+  if (e.key === 'kt3_lic' || e.key === 'kt3_mid' || e.key === 'kt3_last_opened' || e.key === 'kt3_online_lic_state') {
     checkLic();
   }
+});
+
+window.addEventListener('online', () => {
+  checkLic();
+  updateSettingsLicensePanel();
 });
 
 document.addEventListener('keydown', (e) => {

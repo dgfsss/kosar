@@ -8,7 +8,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <title>CRM و سامانه صدور لایسنس کارگزاران بیمه</title>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --c0:#020b16;--c1:#071f3a;--c2:#1a72cc;--c3:#3b82f6;
@@ -25,6 +24,41 @@ body {
   min-height: 100vh;
   padding: 15px;
   direction: rtl;
+}
+.manager-lock {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 10, 20, 0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.manager-lock-card {
+  width: min(420px, 100%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.manager-lock-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 5px;
+}
+.manager-lock-sub {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.9;
+  margin-bottom: 10px;
+}
+.manager-lock-msg {
+  min-height: 20px;
+  font-size: 11px;
+  color: #f87171;
+  margin-top: 8px;
 }
 .wrap {
   width: 100%;
@@ -137,6 +171,7 @@ tr:hover td { background: rgba(59,130,246,0.03); }
 .bd { padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: bold; display: inline-block; }
 .bgg { background: rgba(22,163,74,0.15); color: #4ade80; }
 .br { background: rgba(220,38,38,0.15); color: #f87171; }
+.bo { background: rgba(234,88,12,0.15); color: #fdba74; }
 
 #result-panel {
   display: none;
@@ -150,7 +185,20 @@ tr:hover td { background: rgba(59,130,246,0.03); }
 </head>
 <body>
 
-<div class="wrap">
+<div id="manager-lock" class="manager-lock">
+  <div class="manager-lock-card">
+    <div class="manager-lock-title">ورود امن مدیر لایسنس</div>
+    <div class="manager-lock-sub">این بخش فقط برای مدیریت لایسنس است. برای ادامه، رمز مدیریت را وارد کنید.</div>
+    <div class="fgrp" style="margin-bottom:8px;">
+      <label>رمز مدیریت</label>
+      <input id="manager-pass" type="password" placeholder="رمز ورود مدیریت" autocomplete="current-password">
+    </div>
+    <button class="btn bg" style="width:100%;" onclick="unlockManagerPanel()">ورود به پنل مدیریت</button>
+    <div id="manager-lock-msg" class="manager-lock-msg"></div>
+  </div>
+</div>
+
+<div class="wrap" id="manager-app" style="display:none;">
   
   <!-- HEADER -->
   <div class="header">
@@ -242,6 +290,7 @@ tr:hover td { background: rgba(59,130,246,0.03); }
       <button class="btn bp bxs" onclick="auditLicenseDb()">🔎 تحلیل سلامت دیتابیس</button>
       <button class="btn bgreen bxs" onclick="repairLicenseDb()">🛠 تعمیر خودکار دیتابیس</button>
       <button class="btn bp bxs" onclick="exportActiveLicensesCsv()">📤 خروجی CSV لایسنس‌های فعال</button>
+      <button class="btn bp bxs" onclick="exportOnlineRegistryJson()">🌐 خروجی رجیستری آنلاین</button>
       <button class="btn bred bxs" onclick="purgeInvalidLicenses()">🧹 حذف رکوردهای نامعتبر</button>
     </div>
   </div>
@@ -250,6 +299,9 @@ tr:hover td { background: rgba(59,130,246,0.03); }
 
 <script>
 const licSecret = "KOSAR_SEC_2026_SALT";
+const ONLINE_REGISTRY_SCHEMA = 1;
+const MANAGER_ACCESS_KEY = 'ks_manager_unlock_v1';
+const MANAGER_PASSWORD_SHA256 = '18870d0dc74bbc74c0d54c451d0cba8a622ee686708b85a3814f70b256a6b2c4';
 const SALES_KEY = 'kt3_lic_sales';
 const SALES_BAK_KEY = 'kt3_lic_sales_bak';
 const memStore = {};
@@ -301,6 +353,77 @@ function normalizePhone(input) {
   return String(input || '').replace(/[^0-9]/g, '');
 }
 
+async function hashSha256Hex(text) {
+  if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) return '';
+  const data = new TextEncoder().encode(String(text || ''));
+  const buf = await window.crypto.subtle.digest('SHA-256', data);
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function setManagerLockMessage(msg, ok) {
+  const el = document.getElementById('manager-lock-msg');
+  if (!el) return;
+  el.style.color = ok ? '#4ade80' : '#f87171';
+  el.textContent = msg || '';
+}
+
+function openManagerApp() {
+  const lock = document.getElementById('manager-lock');
+  const app = document.getElementById('manager-app');
+  if (lock) lock.style.display = 'none';
+  if (app) app.style.display = 'block';
+}
+
+async function unlockManagerPanel() {
+  const input = document.getElementById('manager-pass');
+  if (!input) return;
+  const pass = String(input.value || '').trim();
+  if (!pass) {
+    setManagerLockMessage('رمز مدیریت را وارد کنید.', false);
+    return;
+  }
+
+  let valid = false;
+  try {
+    const sha = await hashSha256Hex(pass);
+    if (!sha) {
+      setManagerLockMessage('این مرورگر برای ورود امن مدیریت پشتیبانی نمی شود. از نسخه به روز Chrome, Edge, Firefox یا Safari استفاده کنید.', false);
+      return;
+    }
+    valid = (sha === MANAGER_PASSWORD_SHA256);
+  } catch (e) {
+    valid = false;
+  }
+
+  if (!valid) {
+    setManagerLockMessage('رمز واردشده اشتباه است.', false);
+    input.value = '';
+    input.focus();
+    return;
+  }
+
+  try { sessionStorage.setItem(MANAGER_ACCESS_KEY, '1'); } catch (e) {}
+  setManagerLockMessage('ورود موفق بود.', true);
+  openManagerApp();
+}
+
+function initManagerAccess() {
+  let unlocked = false;
+  try { unlocked = sessionStorage.getItem(MANAGER_ACCESS_KEY) === '1'; } catch (e) {}
+  if (unlocked) {
+    openManagerApp();
+    return;
+  }
+  const input = document.getElementById('manager-pass');
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') unlockManagerPanel();
+    });
+    input.focus();
+  }
+}
+
 function normalizeLicenseRecord(row) {
   if (!row || typeof row !== 'object') return null;
   const mid = normalizeMid(row.mid);
@@ -319,6 +442,7 @@ function normalizeLicenseRecord(row) {
     duration,
     expDate,
     licKey,
+    status: row.status === 'revoked' ? 'revoked' : 'active',
     createdAt: row.createdAt || new Date().toISOString()
   };
 }
@@ -435,6 +559,7 @@ function createLicense() {
     existing.duration = dur;
     existing.expDate = expStr;
     existing.licKey = encodedKey;
+    existing.status = 'active';
     existing.createdAt = new Date().toISOString();
   } else {
     const client = {
@@ -445,6 +570,7 @@ function createLicense() {
       duration: dur,
       expDate: expStr,
       licKey: encodedKey,
+      status: 'active',
       createdAt: new Date().toISOString()
     };
     L.unshift(client);
@@ -483,6 +609,7 @@ function renewLicense(id) {
   client.duration = dur;
   client.expDate = expStr;
   client.licKey = encodedKey;
+  client.status = 'active';
 
   saveSalesData();
   alert('لایسنس مشتری تمدید شد. کد لایسنس جدید در فیلد کپی آماده است.');
@@ -494,6 +621,19 @@ function renewLicense(id) {
 function deleteLicense(id) {
   if (!confirm('آیا مطمئن هستید که می‌خواهید مشخصات این مشتری را حذف کنید؟ این عمل غیر قابل بازگشت است.')) return;
   L = L.filter(x => x.id !== id);
+  saveSalesData();
+}
+
+function toggleLicenseOnlineState(id) {
+  const client = L.find(x => x.id === id);
+  if (!client) return;
+  const next = client.status === 'revoked' ? 'active' : 'revoked';
+  const msg = next === 'revoked'
+    ? 'این لایسنس برای بررسی آنلاین مسدود شود؟ کاربران آنلاین بلافاصله قفل می‌شوند.'
+    : 'این لایسنس از حالت مسدود خارج شود؟';
+  if (!confirm(msg)) return;
+  client.status = next;
+  client.createdAt = new Date().toISOString();
   saveSalesData();
 }
 
@@ -569,12 +709,14 @@ function auditLicenseDb() {
   let duplicateByMid = 0;
   let expired = 0;
   let badSign = 0;
+  let revoked = 0;
   const seen = new Set();
 
   L.forEach(c => {
     if (seen.has(c.mid)) duplicateByMid++;
     seen.add(c.mid);
     if (todayStr > c.expDate) expired++;
+    if (c.status === 'revoked') revoked++;
     try {
       const decoded = atob(c.licKey);
       const parts = decoded.split(':');
@@ -594,7 +736,7 @@ function auditLicenseDb() {
     health.innerHTML = `
       کل رکوردها: <strong>${total}</strong><br>
       فعال: <strong style="color:#4ade80">${total - expired}</strong> | منقضی: <strong style="color:#f87171">${expired}</strong><br>
-      رکورد تکراری MID: <strong style="color:var(--gold2)">${duplicateByMid}</strong> | رکورد مشکل‌دار: <strong style="color:#f87171">${invalid + badSign}</strong>
+      مسدود آنلاین: <strong style="color:#fdba74">${revoked}</strong> | رکورد تکراری MID: <strong style="color:var(--gold2)">${duplicateByMid}</strong> | رکورد مشکل‌دار: <strong style="color:#f87171">${invalid + badSign}</strong>
     `;
     if (!HAS_PERSISTENT_STORAGE) {
       health.innerHTML += '<br><small style="color:#f87171">⚠️ ذخیره‌سازی پایدار مرورگر غیرفعال است (Private Mode/محدودیت سیستم). برای جلوگیری از از‌دست‌رفتن دیتابیس، از مرورگر عادی استفاده کنید و حتما بکاپ بگیرید.</small>';
@@ -625,15 +767,45 @@ function purgeInvalidLicenses() {
 
 function exportActiveLicensesCsv() {
   const today = getLocalTodayString();
-  const rows = [['name','phone','mid','expDate','licenseKey']];
+  const rows = [['name','phone','mid','expDate','licenseKey','status']];
   L.forEach(c => {
-    if (c.expDate >= today) rows.push([c.name, c.phone, c.mid, c.expDate, c.licKey]);
+    if (c.expDate >= today && c.status !== 'revoked') rows.push([c.name, c.phone, c.mid, c.expDate, c.licKey, c.status || 'active']);
   });
   const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   a.download = 'active-licenses-' + new Date().toISOString().slice(0, 10) + '.csv';
   a.click();
+}
+
+function buildOnlineRegistry() {
+  const today = getLocalTodayString();
+  const licenses = L.map(c => ({
+    mid: c.mid,
+    expDate: c.expDate,
+    status: c.status === 'revoked' ? 'revoked' : 'active',
+    licenseHash: genChecksum(c.mid, c.expDate + ':' + String(c.licKey || '').trim())
+  }));
+
+  return {
+    schemaVersion: ONLINE_REGISTRY_SCHEMA,
+    generatedAt: new Date().toISOString(),
+    generatedAtFa: formatPersianDate(new Date()),
+    timezone: 'Asia/Tehran',
+    today: today,
+    total: licenses.length,
+    licenses: licenses
+  };
+}
+
+function exportOnlineRegistryJson() {
+  const data = buildOnlineRegistry();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'license-registry.json';
+  a.click();
+  alert('فایل license-registry.json ساخته شد. این فایل را در ریشه سایت آنلاین قرار دهید.');
 }
 
 function renderSales() {
@@ -645,7 +817,7 @@ function renderSales() {
   // Stats Calculation
   let active = 0, expired = 0, demos = 0;
   L.forEach(c => {
-    if (todayStr > c.expDate) expired++;
+    if (todayStr > c.expDate || c.status === 'revoked') expired++;
     else {
       active++;
       if (c.duration <= 7) demos++;
@@ -666,6 +838,7 @@ function renderSales() {
 
   tbl.innerHTML = list.map(c => {
     const isExpired = todayStr > c.expDate;
+    const isRevoked = c.status === 'revoked';
     let typeLabel = c.duration <= 7 ? 'دمو ۷ روزه' : c.duration <= 180 ? '۶ ماهه' : c.duration <= 365 ? '۱ ساله' : 'دائمی ده‌ساله';
     return `
       <tr>
@@ -675,11 +848,12 @@ function renderSales() {
         <td>${typeLabel}</td>
         <td>${formatPersianDate(c.expDate)}</td>
         <td>
-          <span class="bd ${isExpired ? 'br' : 'bgg'}">${isExpired ? 'منقضی شده' : 'فعال'}</span>
+          <span class="bd ${isRevoked ? 'bo' : (isExpired ? 'br' : 'bgg')}">${isRevoked ? 'مسدود آنلاین' : (isExpired ? 'منقضی شده' : 'فعال')}</span>
         </td>
         <td style="white-space:nowrap;">
           <button class="btn bgreen bxs" onclick="copyInlineKey(this, '${c.licKey}')">📋 کپی کلید</button>
           <button class="btn bp bxs" onclick="renewLicense('${c.id}')">🔄 تمدید</button>
+          <button class="btn ${isRevoked ? 'bgreen' : 'bp'} bxs" onclick="toggleLicenseOnlineState('${c.id}')">${isRevoked ? '✅ رفع مسدودیت' : '⛔ مسدودسازی'}</button>
           <button class="btn bred bxs" onclick="deleteLicense('${c.id}')">🗑 حذف</button>
         </td>
       </tr>
@@ -722,6 +896,7 @@ function loadSalesBackup(event) {
 }
 
 // init
+initManagerAccess();
 renderSales();
 auditLicenseDb();
 

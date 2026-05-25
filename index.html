@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2d52">
+<link rel="manifest" href="manifest.webmanifest">
+<title>ورود به سامانه کسری</title>
+<style>
+:root{
+  --bg:#09111c;
+  --card:#111c2a;
+  --border:#1e2d3d;
+  --text:#f1f5f9;
+  --muted:#889ab0;
+  --c1:#0b2d52;
+  --c2:#1a72cc;
+  --gold:#e8a020;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Tahoma, Vazirmatn, sans-serif;
+  color:var(--text);
+  background:radial-gradient(circle at top, #12345f 0%, var(--bg) 55%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+.card{
+  width:min(560px,100%);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 14px 40px rgba(0,0,0,.35);
+}
+h1{margin:0 0 8px;font-size:20px}
+p{margin:0 0 16px;color:var(--muted);line-height:1.9;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:540px){.grid{grid-template-columns:1fr 1fr}}
+.btn{
+  display:block;
+  text-align:center;
+  text-decoration:none;
+  color:#fff;
+  padding:12px 14px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:14px;
+}
+.primary{background:linear-gradient(135deg,var(--c1),var(--c2))}
+.alt{background:linear-gradient(135deg,var(--gold),#b87318)}
+.note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.9}
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>سامانه کسری</h1>
+    <p>نسخه آنلاین با پشتیبانی آفلاین. پس از اولین بارگذاری موفق، برنامه‌ها بدون اینترنت هم اجرا می‌شوند.</p>
+    <div class="grid">
+      <a class="btn primary" href="./ai_studio_code (5).html">ورود به برنامه مشتری</a>
+      <a class="btn alt" href="./ai_studio_code (6).html">ورود به پنل مدیریت لایسنس</a>
+    </div>
+    <div class="note">اگر اولین بار اینترنت قطع باشد، کش اولیه دانلود نشده و حالت آفلاین کامل در دسترس نخواهد بود.</div>
+  </main>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

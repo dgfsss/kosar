@@ -1,0 +1,2875 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2d52">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<title>سامانه مدیریت و حسابداری اقساط بیمه</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c0:#05152b;--c1:#0b2d52;--c2:#1257a0;--c3:#1a72cc;
+  --gold:#e8a020;--gold2:#f5c842;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--purple:#7c3aed;
+  --bg:#eef2f7;--card:#fff;--border:#dde3ed;
+  --text:#0d1b2a;--muted:#6b7a8d;
+  --r:14px;--sh:0 2px 16px rgba(11,45,82,.09);
+  --sidebar:230px;
+}
+body.dark {
+  --c0:#020b16;--c1:#071f3a;--c2:#1a72cc;--c3:#3b82f6;
+  --bg:#09111c;--card:#111c2a;--border:#1e2d3d;
+  --text:#f1f5f9;--muted:#889ab0;
+  --sh:0 4px 20px rgba(0,0,0,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{font-size:14px;scroll-behavior:smooth;}
+body{font-family:'Vazirmatn',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background 0.2s, color 0.2s;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#c4cdd8;border-radius:4px;}
+
+/* ── SECURITY ENVELOPE (CRITICAL) ── */
+#app-container {
+  display: none; /* App is completely hidden until license is fully validated */
+}
+
+/* ── HEADER ── */
+.hdr{
+  height:58px;background:linear-gradient(105deg,var(--c0) 0%,var(--c1) 55%,#0e3d75 100%);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;position:sticky;top:0;z-index:300;
+  box-shadow:0 2px 18px rgba(0,0,0,.35);
+}
+.hdr-logo{display:flex;align-items:center;gap:10px;min-width:0;}
+.hbadge{
+  width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),#b87318);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:900;color:#fff;
+  box-shadow:0 3px 10px rgba(232,160,32,.5);
+}
+.hlogo-text h1{font-size:14px;font-weight:800;color:#fff;}
+.hlogo-text p{font-size:9.5px;color:rgba(255,255,255,.45);}
+.hstats{display:flex;gap:16px;align-items:center;}
+.hst{text-align:center;}
+.hst-v{font-size:16px;font-weight:800;color:var(--gold2);}
+.hst-l{font-size:9px;color:rgba(255,255,255,.45);}
+.hbtn{background:none;border:none;cursor:pointer;padding:6px;display:flex;flex-direction:column;gap:4px;}
+.hbtn span{display:block;width:20px;height:2px;background:#fff;border-radius:2px;transition:.25s;}
+@media(min-width:860px){.hbtn{display:none;}}
+@media(max-width:480px){.hstats{display:none;}}
+
+/* ── LAYOUT ── */
+.wrap{display:flex;min-height:calc(100vh - 58px);}
+
+/* ── SIDEBAR ── */
+.sb{
+  width:var(--sidebar);background:var(--card);
+  border-left:1px solid var(--border);
+  padding:14px 0 0;flex-shrink:0;
+  position:sticky;top:58px;height:calc(100vh - 58px);
+  overflow-y:auto;transition:transform .28s ease, background 0.2s, border-color 0.2s;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+@media(max-width:859px){
+  .sb{position:fixed;top:58px;right:0;bottom:0;z-index:299;
+    transform:translateX(102%);box-shadow:-6px 0 24px rgba(0,0,0,.18);}
+  .sb.open{transform:translateX(0);}
+}
+.sbov{display:none;position:fixed;inset:0;top:58px;background:rgba(0,0,0,.45);z-index:298;}
+.sbov.open{display:block;}
+.sbs{padding:10px 14px 3px;font-size:9px;color:var(--muted);font-weight:800;letter-spacing:.9px;text-transform:uppercase;}
+.ni{
+  display:flex;align-items:center;gap:9px;padding:9px 16px;
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text);
+  border-right:3px solid transparent;transition:.15s;
+}
+.ni:hover{background:#f0f6ff;color:var(--c2);}
+.ni.on{background:#eff6ff;color:var(--c0);border-right-color:var(--gold);font-weight:700;}
+body.dark .ni.on{background:#112235;color:#fff;}
+.ni .ico{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.nbadge{margin-right:auto;background:var(--red);color:#fff;font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;}
+
+/* ── MAIN ── */
+main{flex:1;padding:14px;overflow-x:hidden;min-width:0;}
+@media(max-width:859px){main{padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px));}}
+
+/* ── PAGES ── */
+.pg{display:none;}
+.pg.on{display:block;animation:fu .22s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ── PAGE HEADER ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
+.ph h2{font-size:17px;font-weight:900;}
+.ph p{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+/* ── STAT GRID ── */
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+@media(min-width:560px){.sgrid{grid-template-columns:repeat(4,1fr);}}
+.scard{
+  background:var(--card);border-radius:var(--r);padding:14px 16px;
+  border:1px solid var(--border);box-shadow:var(--sh);
+  position:relative;overflow:hidden;cursor:default;
+  transition:transform .18s,box-shadow .18s, background 0.2s, border-color 0.2s;
+}
+.scard:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(11,45,82,.13);}
+.scard::after{content:'';position:absolute;left:-14px;bottom:-14px;width:60px;height:60px;border-radius:50%;background:rgba(11,45,82,.04);}
+.scard .si{font-size:24px;margin-bottom:6px;}
+.scard .sv{font-size:24px;font-weight:900;color:var(--text);}
+body.dark .scard .sv{color:#fff;}
+.scard .sl{font-size:10.5px;color:var(--muted);margin-top:2px;}
+
+/* ── CARD ── */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px 18px;box-shadow:var(--sh);margin-bottom:14px;transition:background 0.2s, border-color 0.2s;}
+.ctitle{font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+body.dark .ctitle{color:#fff;}
+.ctitle::before{content:'';width:3px;height:14px;background:linear-gradient(var(--gold),#b87318);border-radius:2px;flex-shrink:0;}
+
+/* ── FORM ── */
+.fg{display:grid;grid-template-columns:1fr;gap:10px;}
+@media(min-width:480px){.fg{grid-template-columns:1fr 1fr;}}
+@media(min-width:700px){.fg3{grid-template-columns:1fr 1fr 1fr!important;}}
+.fg.full,.fgrp.full{grid-column:1/-1;}
+.fgrp{display:flex;flex-direction:column;gap:4px;}
+.fgrp label{font-size:11px;font-weight:700;color:var(--text);opacity:0.85;}
+input,select,textarea{
+  padding:8px 11px;border:1.5px solid var(--border);border-radius:9px;
+  font-family:'Vazirmatn',sans-serif;font-size:13px;color:var(--text);
+  background:var(--card);transition:border .16s,box-shadow .16s, background 0.2s, color 0.2s;width:100%;direction:rtl;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--c3);box-shadow:0 0 0 3px rgba(26,114,204,.12);}
+textarea{resize:vertical;min-height:68px;}
+.hint{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:8px 18px;border-radius:9px;border:none;
+  font-family:'Vazirmatn',sans-serif;font-size:12.5px;font-weight:700;
+  cursor:pointer;transition:all .16s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.bp{background:linear-gradient(135deg,var(--c1),var(--c0));color:#fff;}
+.bp:hover{box-shadow:0 4px 14px rgba(11,45,82,.32);transform:translateY(-1px);}
+.bg{background:linear-gradient(135deg,var(--gold),#b87318);color:#fff;}
+.bg:hover{box-shadow:0 4px 14px rgba(232,160,32,.38);transform:translateY(-1px);}
+.bgreen{background:var(--green);color:#fff;}
+.bgreen:hover{background:#15803d;}
+.bred{background:var(--red);color:#fff;}
+.bred:hover{background:#b91c1c;}
+.bpurple{background:var(--purple);color:#fff;}
+.bpurple:hover{background:#6d28d9;}
+.bgh{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+.bgh:hover{border-color:var(--c3);color:var(--c3);background:rgba(26,114,204,.06);}
+.bsm{padding:5px 11px;font-size:11.5px;border-radius:7px;}
+.bxs{padding:3px 9px;font-size:11px;border-radius:6px;}
+.bgrp{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;align-items:center;}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;border-radius:11px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px;}
+th{background:rgba(11,45,82,0.04);padding:9px 11px;font-weight:700;font-size:10.5px;color:var(--muted);text-align:right;border-bottom:1px solid var(--border);}
+td{padding:8px 11px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(26,114,204,0.03);}
+
+/* ── BADGE ── */
+.bd{padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;display:inline-block;white-space:nowrap;}
+.bu{background:#dbeafe;color:#1e40af;}
+.bgg{background:#dcfce7;color:#166534;}
+.br{background:#fee2e2;color:#991b1b;}
+.bo{background:#ffedd5;color:#9a3412;}
+.bw{background:rgba(148,163,184,0.15);color:var(--text);}
+.by{background:#fef9c3;color:#854d0e;}
+.bpu{background:#ede9fe;color:#5b21b6;}
+
+/* ── INSTALLMENT ROW ── */
+.itbl{border-radius:11px;overflow:hidden;border:1px solid var(--border);}
+.ir{display:grid;grid-template-columns:28px 1fr 100px 88px 165px;align-items:center;padding:8px 11px;border-bottom:1px solid var(--border);font-size:11.5px;gap:4px;}
+.ir:last-child{border-bottom:none;}
+.ir.ih{background:rgba(11,45,82,0.04);font-weight:800;font-size:10.5px;color:var(--muted);}
+.ir:not(.ih):hover{background:rgba(26,114,204,0.03);}
+
+/* Custom manual editing input styles */
+.man-title, .man-amount, .man-due {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+  text-align: center;
+  padding: 4px 6px;
+  font-size: 11.5px;
+}
+
+.date-inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.date-inline input {
+  flex: 1;
+}
+
+.date-invalid {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+}
+
+.jalali-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 14px;
+}
+
+.jalali-picker-backdrop.open {
+  display: flex;
+}
+
+.jalali-picker {
+  width: min(360px, 100%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--sh);
+  padding: 12px;
+}
+
+.jalali-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.jalali-picker-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.jalali-picker-weekdays,
+.jalali-picker-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.jalali-picker-weekdays {
+  margin-bottom: 6px;
+}
+
+.jalali-picker-weekdays span {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 700;
+}
+
+.jalali-day {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.jalali-day:hover {
+  border-color: var(--c3);
+}
+
+.jalali-day.sel {
+  background: var(--c3);
+  border-color: var(--c3);
+  color: #fff;
+}
+
+.jalali-day.today {
+  border-color: var(--gold);
+}
+
+.jalali-empty {
+  height: 32px;
+}
+
+.jalali-picker-foot {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+/* Mobile stacked layout for table items to prevent overflow */
+@media(max-width:580px){
+  .tw table, .tw thead, .tw tbody, .tw th, .tw td, .tw tr { 
+    display: block; 
+    width: 100%; 
+  }
+  .tw th { display: none; }
+  .tw tr {
+    border-bottom: 1.5px solid var(--border);
+    padding: 12px 10px;
+  }
+  .tw td {
+    border: none;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tw td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .ir {
+    grid-template-columns: 1fr !important;
+    padding: 12px;
+    gap: 6px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .ir span {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .ir span::before {
+    content: attr(data-col);
+    font-weight: 700;
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+  .ir.ih { display: none; }
+}
+
+/* ── PROGRESS ── */
+.pw{background:rgba(148,163,184,0.2);border-radius:99px;height:7px;overflow:hidden;}
+.pb{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),#4ade80);transition:width .7s ease;}
+
+/* ── SLIDER ── */
+.slrow{display:flex;align-items:center;gap:10px;}
+input[type=range]{flex:1;height:5px;border-radius:3px;padding:0;border:none;accent-color:var(--c1);}
+.slv{font-size:15px;font-weight:800;color:var(--text);min-width:42px;text-align:center;}
+
+/* ── SEARCH ROW ── */
+.sr{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+.sr input{flex:1;min-width:110px;}
+.sr select{width:130px;}
+
+/* ── EMPTY ── */
+.emp{text-align:center;padding:36px 16px;color:var(--muted);}
+.emp .ei{font-size:40px;margin-bottom:8px;}
+.emp p{font-size:12.5px;}
+
+/* ── MODAL ── */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:400;display:none;align-items:center;justify-content:center;padding:10px;}
+.mov.open{display:flex;}
+.modal{background:var(--card);border-radius:18px;padding:20px;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.28);animation:mi .2s ease;}
+@keyframes mi{from{opacity:0;transform:scale(.93) translateY(14px);}to{opacity:1;transform:none;}}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.mt{font-size:14px;font-weight:800;color:var(--text);}
+.mc{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:2px 6px;line-height:1;}
+.mc:hover{color:var(--red);}
+
+/* ── ALERT ITEM ── */
+.ali{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;border:1px solid var(--border);margin-bottom:7px;background:var(--card);}
+.ali.urg{border-color:#fca5a5;background:rgba(239,68,68,0.05);}
+.ali.soon{border-color:#fde68a;background:rgba(245,158,11,0.05);}
+.adot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.dr{background:var(--red);}
+.dy{background:var(--gold);}
+.dg{background:var(--green);}
+.ai{flex:1;min-width:0;}
+.an{font-size:12px;font-weight:700;color:var(--text);}
+.as{font-size:10.5px;color:var(--muted);}
+.ad{font-size:11px;font-weight:700;color:var(--red);white-space:nowrap;}
+.pulse{animation:pl 1.8s infinite;}
+@keyframes pl{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── FIN BOXES ── */
+.finboxes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:480px){.finboxes{grid-template-columns:1fr 1fr;}}
+.finbox{border-radius:10px;padding:12px;text-align:center;}
+.finbox .fv{font-size:18px;font-weight:900;}
+.finbox .fl{font-size:9.5px;color:var(--muted);margin-top:2px;}
+
+/* ── QUICK NOTE ── */
+.qncard{background:linear-gradient(120deg,var(--c0),#0e3d75);border-radius:var(--r);padding:16px;color:#fff;margin-bottom:14px;position:relative;overflow:hidden;}
+.qncard::after{content:'📝';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:44px;opacity:.08;}
+.qntxt{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);color:#fff;border-radius:9px;font-size:12.5px;width:100%;resize:none;min-height:72px;padding:9px 11px;font-family:'Vazirmatn',sans-serif;outline:none;}
+.qntxt::placeholder{color:rgba(255,255,255,.35);}
+.qntxt:focus{border-color:rgba(255,255,255,.35);}
+
+/* ── BOTTOM NAV ── */
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;padding-bottom:env(safe-area-inset-bottom, 0px);background:var(--card);border-top:1px solid var(--border);z-index:290;grid-template-columns:repeat(5,1fr);box-shadow:0 -3px 16px rgba(0,0,0,.08);}
+@media(max-width:859px){.bnav{display:grid;}}
+.bni{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 4px 9px;cursor:pointer;font-size:9.5px;color:var(--muted);font-weight:600;gap:2px;transition:.15s;border:none;background:none;position:relative;}
+.bni .bi{font-size:19px;transition:transform .18s;}
+.bni.on{color:var(--c3);}
+.bni.on .bi{transform:scale(1.18);}
+.bni .bdot{position:absolute;top:5px;right:calc(50% - 14px);width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--card);}
+
+/* Mobile FAB for fast contract creation */
+.fab {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), #b87318);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(232,160,32,0.4);
+  border: none;
+  cursor: pointer;
+  z-index: 200;
+  transition: transform 0.2s;
+}
+.fab:hover { transform: scale(1.05); }
+@media(min-width: 860px) { .fab { display: none; } }
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#fff;padding:9px 20px;border-radius:20px;font-size:12px;font-weight:600;z-index:9999;transition:transform .28s ease;pointer-events:none;white-space:normal;line-height:1.6;max-width:min(92vw,420px);text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.28);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{background:var(--green);}
+#toast.err{background:var(--red);}
+#toast.warn{background:var(--orange);}
+@media(min-width:860px){#toast{bottom:24px;}}
+
+/* ── DIVIDER ── */
+hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
+
+/* ── FILE SAVE STATUS ── */
+.fsbar{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;font-size:11.5px;color:#166534;margin-bottom:12px;}
+.fsbar.warn{background:#fffbeb;border-color:#fde68a;color:#854d0e;}
+.fsbar.err{background:#fff5f5;border-color:#fca5a5;color:#991b1b;}
+
+/* ── PRINT ── */
+@media print{.hdr,.sb,.bnav,.bgrp,.ph .btn,.sr{display:none!important;}.pg{display:block!important;}.card{box-shadow:none;border:1px solid #ddd;}}
+</style>
+</head>
+<body>
+
+<!-- ── GATED ENVELOPE (CRITICAL DEFENSE) ── -->
+<div id="app-container">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-logo">
+      <div class="hbadge">ب</div>
+      <div class="hbadge" style="background:#fff; color:var(--gold); font-size:11px; margin-right:4px;" id="hdr-credit-badge">CRM</div>
+      <div class="hlogo-text">
+        <h1 id="hdr-agency-title">سامانه بیمه</h1>
+        <p id="hdr-agency-sub">مدیریت هوشمند اقساط</p>
+      </div>
+    </div>
+    <div class="hstats">
+      <button class="bgh" onclick="toggleTheme()" aria-label="پوسته" style="border:none; border-radius:50%; width:34px; height:34px; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(255,255,255,0.08); color:#fff; transition: background 0.2s;">🌓</button>
+      <div class="hst"><div class="hst-v" id="h-c">0</div><div class="hst-l">مشتری</div></div>
+      <div class="hst"><div class="hst-v" id="h-d">0</div><div class="hst-l">سررسید ماه</div></div>
+      <div class="hst"><div class="hst-v" id="h-o" style="color:#f87171">0</div><div class="hst-l">معوق</div></div>
+    </div>
+    <button class="hbtn" onclick="toggleSB()" aria-label="منو"><span></span><span></span><span></span></button>
+  </div>
+
+  <div class="wrap">
+
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sbov" id="sbov" onclick="closeSB()"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="sb" id="sb">
+    <div>
+      <div class="sbs">اصلی</div>
+      <div class="ni on" id="ni-dashboard" onclick="go('dashboard');closeSB()"><span class="ico">🏠</span>داشبورد</div>
+      <div class="ni" id="ni-add" onclick="resetF(); go('add');closeSB()"><span class="ico">➕</span>قرارداد جدید</div>
+      <div class="ni" id="ni-customers" onclick="go('customers');closeSB()"><span class="ico">👥</span>مشتریان</div>
+      <div class="ni" id="ni-installments" onclick="go('installments');closeSB()"><span class="ico">📋</span>اقساط<span class="nbadge" id="sb-ov" style="display:none">!</span></div>
+      <div class="ni" id="ni-alerts" onclick="go('alerts');closeSB()"><span class="ico">🔔</span>هشدارها<span class="nbadge" id="sb-al" style="display:none">0</span></div>
+      <div class="sbs" style="margin-top:8px">حسابداری و تحلیل</div>
+      <div class="ni" id="ni-accounting" onclick="go('accounting');closeSB()"><span class="ico">📊</span>حسابداری پیشرفت</div>
+      <div class="sbs" style="margin-top:8px">پیکربندی</div>
+      <div class="ni" id="ni-settings" onclick="go('settings');closeSB()"><span class="ico">⚙️</span>تنظیمات نمایندگی</div>
+      <div class="ni" id="ni-recovery" onclick="go('recovery');closeSB()"><span class="ico">🔄</span>مرکز بازیابی داده</div>
+      <div class="sbs" style="margin-top:8px">ذخیره داده</div>
+      <div class="ni" onclick="saveJSON();closeSB()"><span class="ico">💾</span>ذخیره JSON</div>
+      <div class="ni" onclick="document.getElementById('ijson').click();closeSB()"><span class="ico">📂</span>بارگذاری JSON</div>
+      <div class="ni" onclick="exportCSV();closeSB()"><span class="ico">📊</span>خروجی اکسل</div>
+      <div class="ni" onclick="window.print();closeSB()"><span class="ico">🖨️</span>چاپ صفحه</div>
+      <div class="sbs" style="margin-top:8px">ابزار</div>
+      <div class="ni" id="ni-notes" onclick="go('notes');closeSB()"><span class="ico">📝</span>یادداشت‌ها</div>
+      <div class="ni" id="ni-search" onclick="go('search');closeSB()"><span class="ico">🔍</span>جستجوی پیشرفته</div>
+      <div class="ni" onclick="doClear();closeSB()"><span class="ico">🗑️</span>پاک کردن همه</div>
+    </div>
+    
+    <!-- Sidebar License Info Footer -->
+    <div style="padding:14px; border-top:1px solid var(--border); font-size:10.5px; color:var(--muted); line-height:1.6; margin-top:12px;">
+      <div>شناسه دستگاه: <strong id="sb-mid" style="color:var(--text); letter-spacing:0.5px;">—</strong></div>
+      <div id="sb-lic-expiry">وضعیت لایسنس: در حال بررسی...</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+  <!-- ════ DASHBOARD ════ -->
+  <div class="pg on" id="pg-dashboard">
+    <div class="ph">
+      <div><h2>داشبورد مدیریتی</h2><p>خلاصه وضعیت تعهدات و امور مالی نمایندگی</p></div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn bgh bsm" onclick="toggleTheme()" style="padding: 6px 12px;">🌓 تغییر پوسته</button>
+        <button class="btn bg bsm" onclick="resetF(); go('add')">➕ جدید</button>
+      </div>
+    </div>
+
+    <div class="fsbar" id="fsbar">
+      ✅ داده‌ها در مرورگر ذخیره‌اند — برای نسخه‌پشتیبان از «ذخیره JSON» استفاده کنید
+    </div>
+
+    <div class="sgrid">
+      <div class="scard"><div class="si">👥</div><div class="sv" id="sc-c">0</div><div class="sl">کل مشتریان</div></div>
+      <div class="scard"><div class="si">✅</div><div class="sv" id="sc-p">0</div><div class="sl">اقساط پرداخت‌شده</div></div>
+      <div class="scard"><div class="si">⏳</div><div class="sv" id="sc-w">0</div><div class="sl">در انتظار</div></div>
+      <div class="scard"><div class="si">🔴</div><div class="sv" id="sc-o" style="color:var(--red)">0</div><div class="sl">معوق</div></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">وضعیت مالی نمایندگی</div>
+      <div class="finboxes">
+        <div class="finbox" style="background:#f0fdf4"><div class="fv" style="color:var(--green)" id="fp">۰</div><div class="fl">دریافت‌شده (ت)</div></div>
+        <div class="finbox" style="background:#fff7ed"><div class="fv" style="color:var(--orange)" id="fr">۰</div><div class="fl">باقیمانده (ت)</div></div>
+        <div class="finbox" style="background:#eff6ff" style="grid-column:span 2"><div class="fv" style="color:var(--c0)" id="ft">۰</div><div class="fl">کل قراردادها (ت)</div></div>
+      </div>
+      <div style="margin-top:4px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px"><span>پیشرفت وصول</span><span id="fpct-text">۰٪</span></div>
+        <div class="pw"><div class="pb" id="fbar" style="width:0%"></div></div>
+      </div>
+      <hr>
+      <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;">
+        <div style="font-size:11px;color:var(--muted)">تعهدات سررسید این ماه: <strong id="m-due" style="color:var(--c3)">۰</strong> ت</div>
+        <div style="font-size:11px;color:var(--muted);text-align:left">وصول‌شده این ماه: <strong id="m-paid" style="color:var(--green)">۰</strong> ت</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">⚡ سررسیدهای ۷ روز آینده</div>
+      <div id="due7"></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">آخرین قراردادها</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>نام</th><th>نوع بیمه</th><th>خودرو</th><th>مبلغ</th><th>پیشرفت</th><th>عملیات</th></tr></thead>
+          <tbody id="dtbl"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ADD / EDIT ════ -->
+  <div class="pg" id="pg-add">
+    <div class="ph"><div><h2 id="ftitle">قرارداد جدید</h2><p>اطلاعات کامل را وارد کنید</p></div></div>
+
+    <div class="card">
+      <div class="ctitle">اطلاعات مشتری</div>
+      <div class="fg">
+        <div class="fgrp"><label>نام و نام خانوادگی *</label><input id="fn" type="text" placeholder="مثال: علی احمدی"></div>
+        <div class="fgrp"><label>کد ملی *</label><input id="fnat" type="text" placeholder="۱۰ رقم" maxlength="10" inputmode="numeric" oninput="this.value = faToEn(this.value).replace(/[^0-9]/g, '')"></div>
+        <div class="fgrp"><label>شماره تماس *</label><input id="fph" type="tel" placeholder="09xxxxxxxxx" maxlength="11" inputmode="numeric" oninput="this.value = faToEn(this.value).replace(/[^0-9]/g, '')"></div>
+        <div class="fgrp"><label>شماره بیمه / پالیسی</label><input id="fpol" type="text" placeholder="شماره قرارداد"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">مشخصات بیمه</div>
+      <div class="fg">
+        <div class="fgrp">
+          <label>نوع بیمه *</label>
+          <select id="ftype">
+            <option value="">انتخاب کنید</option>
+            <option value="ثالث">🚗 بیمه ثالث</option>
+            <option value="بدنه">🛡️ بیمه بدنه</option>
+            <option value="مسئولیت">⚖️ بیمه مسئولیت</option>
+          </select>
+        </div>
+        <div class="fgrp">
+          <label>نوع خودرو *</label>
+          <select id="fcar" onchange="carChg()">
+            <option value="">انتخاب کنید</option>
+            <optgroup label="سواری داخلی">
+              <option>پراید</option><option>پژو 206</option><option>پژو 405</option><option>سمند</option>
+              <option>دنا</option><option>تارا</option><option>کوییک</option><option>ساینا</option>
+              <option>تیبا</option><option>آریا</option><option>شاهین</option><option>رانا</option>
+            </optgroup>
+            <optgroup label="خودرو خارجی / مشترک">
+              <option>هایما S7</option><option>رنو ساندرو</option><option>MVM X22</option>
+              <option>چری تیگو</option><option>جک S5</option><option>برلیانس</option><option>لیفان X60</option>
+            </optgroup>
+            <optgroup label="شاسی‌بلند">
+              <option>پاجرو</option><option>لندکروزر</option><option>تاکسون</option><option>سانتافه</option><option>هایلوکس</option>
+            </optgroup>
+            <optgroup label="وانت و باری">
+              <option>وانت پیکاپ</option><option>نیسان وانت</option><option>کامیونت</option>
+            </optgroup>
+            <option value="سایر">✏️ سایر</option>
+          </select>
+        </div>
+        <div class="fgrp" id="car-o" style="display:none"><label>نام خودرو (سایر)</label><input id="fcar2" type="text" placeholder="نوع خودرو را بنویسید"></div>
+        <div class="fgrp"><label>مبلغ کل بیمه (تومان) *</label><input id="ftot" type="text" placeholder="مثال: 5,000,000" oninput="mfmt(this);calcPrev()" inputmode="numeric"></div>
+        <div class="fgrp">
+          <label>تاریخ شروع (شمسی)</label>
+          <div class="date-inline">
+            <input id="fst" type="text" inputmode="numeric" placeholder="1405/03/15" oninput="maskJalaliInput(this)" onchange="calcPrev()" onblur="normalizeJalaliField(this)">
+            <button type="button" class="btn bgh bxs" onclick="openJalaliPickerForInputById('fst')">📅</button>
+            <button type="button" class="btn bgh bxs" onclick="setTodayById('fst', true)">امروز</button>
+          </div>
+        </div>
+        <div class="fgrp">
+          <label>تاریخ انقضا (شمسی)</label>
+          <div class="date-inline">
+            <input id="fex" type="text" inputmode="numeric" placeholder="1406/03/15" oninput="maskJalaliInput(this)" onchange="calcPrev()" onblur="normalizeJalaliField(this)">
+            <button type="button" class="btn bgh bxs" onclick="openJalaliPickerForInputById('fex')">📅</button>
+            <button type="button" class="btn bgh bxs" onclick="setTodayById('fex', true)">امروز</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">تنظیمات اقساط</div>
+      <div class="fg">
+        <div class="fgrp">
+          <label>تعداد اقساط *</label>
+          <select id="fcnt" onchange="calcPrev()">
+            <option value="1">نقد (۱ قسط)</option>
+            <option value="2">۲ قسط</option><option value="3">۳ قسط</option>
+            <option value="4">۴ قسط</option><option value="6" selected>۶ قسط</option>
+            <option value="8">۸ قسط</option><option value="10">۱۰ قسط</option><option value="12">۱۲ قسط</option>
+          </select>
+        </div>
+        <div class="fgrp">
+          <label>نوع پرداخت</label>
+          <select id="fpt">
+            <option value="لینک صندوق">🔗 لینک صندوق</option>
+            <option value="دستگاه پوز">💳 دستگاه پوز</option>
+            <option value="واریز بانکی">🏦 واریز بانکی</option>
+            <option value="نقدی">💵 نقدی</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label style="font-size:11px;font-weight:700;color:#3d4f62;display:block;margin-bottom:7px">
+          درصد پیش‌پرداخت: <strong id="pctlbl" style="color:var(--text)">۲۵٪</strong>
+        </label>
+        <div class="slrow">
+          <input type="range" id="fpct-slider" min="5" max="95" step="5" value="25" oninput="pctChg(this.value)">
+          <span class="slv" id="pctshow">۲۵٪</span>
+        </div>
+      </div>
+      <hr>
+      <div id="prevwrap" style="display:none">
+        <div class="ctitle" style="margin-bottom:9px; display:flex; justify-content:space-between; align-items:center;">
+          <span>پیش‌نمایش و تنظیم دستی اقساط</span>
+          <span id="prev-val-msg" style="font-size:11px; font-weight:bold;"></span>
+        </div>
+        <div class="itbl">
+          <div class="ir ih" style="grid-template-columns: 28px 1.2fr 1.5fr 1.5fr 1fr; gap: 6px;"><span>#</span><span>عنوان قسط</span><span>مبلغ قسط (تومان)</span><span class="hx">تاریخ سررسید</span><span>وضعیت</span></div>
+          <div id="prevrows"></div>
+        </div>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:11.5px;flex-wrap:wrap">
+          <span>پیش‌پرداخت محاسباتی: <strong id="pamt" style="color:var(--text)">—</strong></span>
+          <span>هر قسط محاسباتی: <strong id="eamt" style="color:var(--gold)">—</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">یادداشت قرارداد</div>
+      <textarea id="fnote" placeholder="توضیحات، شرایط خاص، یادآوری..."></textarea>
+      <div class="bgrp">
+        <button class="btn bp" id="sbtn" onclick="saveC()">💾 ذخیره قرارداد</button>
+        <button class="btn bgh" onclick="resetF()">🔄 پاک کردن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CUSTOMERS ════ -->
+  <div class="pg" id="pg-customers">
+    <div class="ph">
+      <div><h2>مشتریان و رتبه‌بندی اعتباری</h2><p>مدیریت بیمه‌گزاران بر اساس سیستم هوشمند سنجش وفاداری</p></div>
+      <button class="btn bp bsm" onclick="resetF(); go('add')">➕ جدید</button>
+    </div>
+    <div class="sr">
+      <input id="cq" type="text" placeholder="🔍 نام، کد ملی، تماس..." oninput="renderC()">
+      <select id="cft" onchange="renderC()">
+        <option value="">همه انواع</option>
+        <option value="ثالث">ثالث</option><option value="بدنه">بدنه</option><option value="مسئولیت">مسئولیت</option>
+      </select>
+      <select id="csort" onchange="renderC()">
+        <option value="new">جدیدترین</option>
+        <option value="name">نام</option>
+        <option value="prog">پیشرفت</option>
+        <option value="total">مبلغ</option>
+      </select>
+    </div>
+    <div class="card" style="padding:0"><div class="tw"><table>
+      <thead><tr><th>نام و مشخصات</th><th>تماس</th><th>نوع بیمه</th><th>خودرو</th><th>پیشرفت مالی</th><th>رتبه خوش‌قولی</th><th>عملیات</th></tr></thead>
+      <tbody id="ctbl"></tbody>
+    </table></div></div>
+  </div>
+
+  <!-- ════ INSTALLMENTS ════ -->
+  <div class="pg" id="pg-installments">
+    <div class="ph">
+      <div><h2>اقساط</h2><p>مدیریت و پیگیری پرداخت‌ها</p></div>
+      <button class="btn bg bsm" onclick="exportCSV()">📊 اکسل</button>
+    </div>
+    <div class="sr">
+      <input id="iq" type="text" placeholder="🔍 جستجوی مشتری..." oninput="renderI()">
+      <select id="ift" onchange="renderI()">
+        <option value="">همه وضعیت‌ها</option>
+        <option value="در انتظار">در انتظار</option>
+        <option value="پرداخت شده">پرداخت شده</option>
+        <option value="معوق">معوق</option>
+      </select>
+    </div>
+    <div id="ilist"></div>
+  </div>
+
+  <!-- ════ ALERTS ════ -->
+  <div class="pg" id="pg-alerts">
+    <div class="ph"><div><h2>هشدارها و فرصت‌های بازاریابی</h2><p>کنترل پیشرفته معوقات، سررسیدهای امروز و فرصت‌های تمدید بیمه‌نامه</p></div></div>
+    <div class="card"><div class="ctitle">🚨 اقساط معوق بحرانی (بالای ۳۰ روز)</div><div id="al-ov-crit"></div></div>
+    <div class="card"><div class="ctitle">🔴 اقساط معوق عادی (کمتر از ۳۰ روز)</div><div id="al-ov-norm"></div></div>
+    <div class="card"><div class="ctitle">⏳ اقساط سررسید فوری (امروز و فردا)</div><div id="al-due-imm"></div></div>
+    <div class="card"><div class="ctitle">📅 سررسیدهای ۳۰ روز آینده</div><div id="al-sn"></div></div>
+    <div class="card"><div class="ctitle">🛡️ فرصت‌های تمدید طلایی (انقضای بیمه‌نامه در ۳۰ روز آینده)</div><div id="al-renewals"></div></div>
+  </div>
+
+  <!-- ════ NOTES ════ -->
+  <div class="pg" id="pg-notes">
+    <div class="ph"><div><h2>یادداشت‌ها</h2><p>نکات روزانه</p></div></div>
+    <div class="qncard">
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.65);margin-bottom:7px">📌 یادداشت جدید</div>
+      <textarea class="qntxt" id="qntxt" placeholder="یادداشت خود را بنویسید..."></textarea>
+      <div style="margin-top:8px;display:flex;gap:7px">
+        <button class="btn bgreen bsm" onclick="addNote()">➕ ذخیره</button>
+        <button class="btn bsm" style="background:rgba(255,255,255,.12);color:#fff;border:none" onclick="document.getElementById('qntxt').value=''">🗑 پاک</button>
+      </div>
+    </div>
+    <div id="nlist"></div>
+  </div>
+
+  <!-- ════ ADVANCED SEARCH ════ -->
+  <div class="pg" id="pg-search">
+    <div class="ph"><div><h2>جستجوی پیشرفته</h2><p>فیلتر چندگانه</p></div></div>
+    <div class="card">
+      <div class="ctitle">فیلترها</div>
+      <div class="fg">
+        <div class="fgrp"><label>نام مشتری</label><input id="sq" type="text" oninput="renderS()" placeholder="جستجو..."></div>
+        <div class="fgrp"><label>نوع بیمه</label>
+          <select id="stype" onchange="renderS()">
+            <option value="">همه</option><option value="ثالث">ثالث</option><option value="بدنه">بدنه</option><option value="مسئولیت">مسئولیت</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>نوع خودرو</label><input id="scar" type="text" oninput="renderS()" placeholder="مثلاً: پراید"></div>
+        <div class="fgrp"><label>وضعیت اقساط</label>
+          <select id="sstat" onchange="renderS()">
+            <option value="">همه</option><option value="در انتظار">در انتظار</option><option value="پرداخت شده">پرداخت شده</option><option value="معوق">معوق</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>حداقل مبلغ (ت)</label><input id="smin" type="text" oninput="mfmt(this);renderS()" placeholder="0" inputmode="numeric"></div>
+        <div class="fgrp"><label>حداکثر مبلغ (ت)</label><input id="smax" type="text" oninput="mfmt(this);renderS()" placeholder="بدون محدودیت" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div class="card" style="padding:0"><div class="tw"><table>
+      <thead><tr><th>نام</th><th>نوع</th><th>خودرو</th><th>مبلغ</th><th>اقساط</th><th>عملیات</th></tr></thead>
+      <tbody id="stbl"></tbody>
+    </table></div></div>
+  </div>
+
+  <!-- ════ RECOVERY CENTER ════ -->
+  <div class="pg" id="pg-recovery">
+    <div class="ph"><div><h2>مرکز مدیریت داده و بازیابی امنیتی</h2><p>جلوگیری از حذف تصادفی و مدیریت فضاهای ذخیره‌سازی محلی</p></div></div>
+    <div class="card">
+      <div class="ctitle">📊 فضای مصرفی مرورگر شما</div>
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;">
+        <span>فضای ذخیره‌سازی اشغال‌شده: <strong id="rec-size">0 KB</strong></span>
+        <span>کل مشتریان موجود: <strong id="rec-cnt">0</strong></span>
+      </div>
+      <div class="bgrp">
+        <button class="btn bp bsm" onclick="createManualSnapshot()">➕ ایجاد نقطه بازگشت دستی</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔄 نقاط بازگشت و نسخه‌های پشتیبان خودکار (تا ۱۵ نسخه اخیر)</div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>عنوان / برچسب</th>
+              <th>تاریخ ثبت</th>
+              <th>تعداد قراردادها</th>
+              <th>عملیات بازیابی</th>
+          </tr>
+        </thead>
+        <tbody id="rectbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════ AGENCY SETTINGS ════ -->
+<div class="pg" id="pg-settings">
+  <div class="ph"><div><h2>تنظیمات اختصاصی نمایندگی</h2><p>شخصی‌سازی هدرها، مشخصات چاپی و برند نمایندگی در اسناد</p></div></div>
+  <div class="card">
+    <div class="ctitle">مشخصات هویتی و آدرس نمایندگی</div>
+    <div class="fg">
+      <div class="fgrp"><label>نام نمایندگی / کارگزار</label><input id="set-broker" type="text" placeholder="مثال: نمایندگی احمدی (کد ۱۲۳۴)"></div>
+      <div class="fgrp"><label>کد نمایندگی</label><input id="set-code" type="text" placeholder="مثال: ۱۲۳۴"></div>
+      <div class="fgrp"><label>تلفن تماس نمایندگی</label><input id="set-phone" type="text" placeholder="مثال: 021XXXXXXXX"></div>
+      <div class="fgrp full"><label>آدرس پستی نمایندگی</label><input id="set-address" type="text" placeholder="آدرس دقیق جهت درج در فاکتور مشتری"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">تنظیم کارمزد رشته‌های بیمه‌ای (جهت محاسبه سود خالص دفتر)</div>
+    <div class="fg">
+      <div class="fgrp"><label>کارمزد بیمه ثالث (٪)</label><input id="set-comm-third" type="number" min="0" max="100" placeholder="پیش‌فرض: ۵"></div>
+      <div class="fgrp"><label>کارمزد بیمه بدنه (٪)</label><input id="set-comm-hull" type="number" min="0" max="100" placeholder="پیش‌فرض: ۱۰"></div>
+      <div class="fgrp"><label>کارمزد بیمه مسئولیت (٪)</label><input id="set-comm-liability" type="number" min="0" max="100" placeholder="پیش‌فرض: ۱۲"></div>
+    </div>
+    <div class="bgrp">
+      <button class="btn bp" onclick="saveSettings()">💾 ذخیره تنظیمات برندینگ</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">مدیریت حرفه‌ای لایسنس سیستم</div>
+    <div id="set-lic-status" style="font-size:12px;color:var(--muted);line-height:1.9;margin-bottom:10px;">وضعیت لایسنس: در حال بررسی...</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">شناسه دستگاه این سیستم: <strong id="set-mid" style="color:var(--text);letter-spacing:0.8px;direction:ltr;display:inline-block;">—</strong></div>
+    <div class="fgrp" style="margin-bottom:8px;">
+      <label>ورود یا تعویض مستقیم لایسنس</label>
+      <input id="set-license-input" type="text" placeholder="کد لایسنس جدید را وارد کنید" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="direction:ltr; text-align:center;">
+    </div>
+    <div class="bgrp">
+      <button class="btn bgreen bsm" onclick="applyLicenseFromSettings()">✅ اعمال لایسنس جدید</button>
+      <button class="btn bp bsm" onclick="openLicenseActivation()">🔑 ورود / تعویض لایسنس</button>
+      <button class="btn bgh bsm" onclick="copyMachineIdFromSettings(this)">📋 کپی شناسه دستگاه</button>
+      <button class="btn bgh bsm" onclick="clearLicenseLockState()">🧹 رفع قفل تلاش ناموفق</button>
+      <button class="btn bred bsm" onclick="removeCurrentLicense()">🚫 حذف لایسنس فعلی</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">آموزش خیلی ساده بکاپ‌گیری JSON</div>
+    <div style="font-size:12px; color:var(--muted); line-height:2; margin-bottom:10px;">
+      1) روی دکمه «تهیه بکاپ کامل JSON» بزنید و فایل را در گوشی/کامپیوتر ذخیره کنید.<br>
+      2) فایل بکاپ را در پیام‌رسان یا فضای ابری برای خودتان هم ارسال کنید.<br>
+      3) هنگام تعویض دستگاه، روی «بازیابی از فایل JSON» بزنید و همان فایل را انتخاب کنید.
+    </div>
+    <div class="bgrp">
+      <button class="btn bp bsm" onclick="saveJSON()">💾 تهیه بکاپ کامل JSON</button>
+      <button class="btn bgh bsm" onclick="document.getElementById('ijson').click()">📂 بازیابی از فایل JSON</button>
+      <button class="btn bgreen bsm" onclick="runBackupHealthCheck(true)">🧪 تست سلامت بکاپ</button>
+    </div>
+    <div id="backup-guide-status" style="font-size:11px; color:var(--muted); margin-top:8px;">آخرین وضعیت بکاپ: هنوز ثبت نشده</div>
+    <div id="backup-health-report" style="font-size:11px; color:var(--muted); margin-top:6px; line-height:1.9;">گزارش سلامت: هنوز بررسی نشده</div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">رفع مشکلات مرورگر (بدون حذف داده‌ها)</div>
+    <div style="font-size:12px; color:var(--muted); line-height:1.9; margin-bottom:10px;">
+      این ابزار فقط کش موقت مرورگر را پاک می‌کند و برنامه را یک‌بار با بارگذاری تمیز اجرا می‌کند.<br>
+      قراردادها، اقساط، لایسنس، تنظیمات و بکاپ‌ها حذف نمی‌شوند.
+    </div>
+    <div class="bgrp">
+      <button class="btn bgh bsm" onclick="clearRuntimeBrowserCache()">🧹 پاکسازی کش موقت و بارگذاری مجدد امن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PROGRESS ACCOUNTING ════ -->
+<div class="pg" id="pg-accounting">
+  <div class="ph"><div><h2>حسابداری پیشرفت و اهداف وصول</h2><p>تحلیل تفصیلی جریان نقدینگی، سن بدهی‌ها و تارگت‌های نمایندگی</p></div></div>
+  
+  <div class="card">
+    <div class="ctitle">🎯 برنامه هدف‌گذاری وصول ماه جاری</div>
+    <div class="fg">
+      <div class="fgrp"><label>هدف وصول این ماه (تومان)</label><input id="acc-target-input" type="text" oninput="mfmt(this); updateAccountingView();" placeholder="مثال: 50,000,000"></div>
+    </div>
+    <div style="margin-top:14px;">
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+        <span>تحقق هدف وصول: <strong id="acc-collected-now">۰</strong> از <strong id="acc-target-now">۰</strong> تومان</span>
+        <strong id="acc-pct-now" style="color:var(--green)">۰٪</strong>
+      </div>
+      <div class="pw"><div class="pb" id="acc-target-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">💸 کارمزد و سود خالص نمایندگی (بر اساس درصدهای کارمزد تنظیمی)</div>
+    <div class="finboxes">
+      <div class="finbox" style="background:#f0fdf4"><div class="fv" style="color:var(--green)" id="acc-comm-collected">۰</div><div class="fl">کارمزد وصول‌شده (نقد)</div></div>
+      <div class="finbox" style="background:#fff7ed"><div class="fv" style="color:var(--orange)" id="acc-comm-pending">۰</div><div class="fl">کارمزد در انتظار وصول</div></div>
+      <div class="finbox" style="background:#eff6ff" style="grid-column:span 2"><div class="fv" style="color:var(--c0)" id="acc-comm-total">۰</div><div class="fl">کل کارمزد ناخالص قراردادها</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">⏳ تجزیه و تحلیل سن بدهی‌ها (معوقات)</div>
+    <div class="finboxes">
+      <div class="finbox" style="background:rgba(234,88,12,0.08);"><div class="fv" style="color:var(--orange)" id="age-30">۰</div><div class="fl">معوق کمتر از ۳۰ روز</div></div>
+      <div class="finbox" style="background:rgba(220,38,38,0.08);"><div class="fv" style="color:var(--red)" id="age-90">۰</div><div class="fl">معوق ۳۰ تا ۹۰ روز</div></div>
+      <div class="finbox" style="background:rgba(124,58,237,0.08);"><div class="fv" style="color:var(--purple)" id="age-plus">۰</div><div class="fl">بحرانی (بالای ۹۰ روز)</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">📅 پیش‌بینی جریان نقدینگی ۱۲ ماهه (سال جاری)</div>
+    <div style="display:flex; flex-direction:column; gap:12px;" id="acc-projections-container"></div>
+  </div>
+</div>
+
+</main>
+</div><!-- /wrap -->
+
+<!-- Mobile floating button -->
+<button class="fab" onclick="resetF(); go('add');" aria-label="قرارداد جدید">➕</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bni on" id="bn-dashboard" onclick="go('dashboard')"><span class="bi">🏠</span>داشبورد</button>
+  <button class="bni" id="bn-customers" onclick="go('customers')"><span class="bi">👥</span>مشتریان</button>
+  <button class="bni" id="bn-add" onclick="resetF(); go('add')"><span class="bi">➕</span>جدید</button>
+  <button class="bni" id="bn-installments" onclick="go('installments')"><span class="bi">📋</span>اقساط</button>
+  <button class="bni" id="bn-alerts" onclick="go('alerts')"><span class="bi">🔔</span>هشدار</button>
+</nav>
+
+<!-- MODAL -->
+<div class="mov" id="mov">
+  <div class="modal">
+    <div class="mh"><span class="mt" id="mtitle">جزئیات</span><button class="mc" onclick="closeMod()">✕</button></div>
+    <div id="mbody"></div>
+  </div>
+</div>
+
+</div> <!-- ── END OF GATED ENVELOPE ── -->
+
+<!-- HIDDEN -->
+<input type="file" id="ijson" accept=".json" style="display:none" onchange="loadJSON(event)">
+<div class="jalali-picker-backdrop" id="jalali-picker-backdrop" onclick="closeJalaliPicker()">
+  <div class="jalali-picker" onclick="event.stopPropagation()">
+    <div class="jalali-picker-head">
+      <button type="button" class="btn bgh bxs" onclick="shiftJalaliPickerMonth(1)">ماه بعد</button>
+      <div class="jalali-picker-title" id="jalali-picker-title">—</div>
+      <button type="button" class="btn bgh bxs" onclick="shiftJalaliPickerMonth(-1)">ماه قبل</button>
+    </div>
+    <div class="jalali-picker-weekdays">
+      <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+    </div>
+    <div class="jalali-picker-days" id="jalali-picker-days"></div>
+    <div class="jalali-picker-foot">
+      <button type="button" class="btn bgh bxs" onclick="selectJalaliPickerToday()">امروز</button>
+      <button type="button" class="btn bred bxs" onclick="closeJalaliPicker()">بستن</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══════════ STATE ═══════════
+const LS_KEYS = {
+  contracts: 'kc3',
+  notes: 'kn3',
+  settings: 'kt3_settings',
+  theme: 'kt3-theme',
+  snapshots: 'kt3_snapshots',
+  machineId: 'kt3_mid',
+  license: 'kt3_lic',
+  lastOpened: 'kt3_last_opened',
+  licenseFailState: 'kt3_lic_fail_state'
+};
+
+const memStore = {};
+const HAS_PERSISTENT_STORAGE = (() => {
+  try {
+    const k = '__ks_storage_test__';
+    localStorage.setItem(k, '1');
+    localStorage.removeItem(k);
+    return true;
+  } catch (e) {
+    return false;
+  }
+})();
+
+const StorageSafe = {
+  getText(key, fallback = '') {
+    try {
+      const v = localStorage.getItem(key);
+      return v == null ? fallback : v;
+    } catch (e) {
+      return key in memStore ? memStore[key] : fallback;
+    }
+  },
+  setText(key, value) {
+    const val = String(value);
+    memStore[key] = val;
+    try {
+      localStorage.setItem(key, val);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  remove(key) {
+    delete memStore[key];
+    try { localStorage.removeItem(key); } catch (e) {}
+  },
+  getJSON(key, fallback) {
+    const raw = this.getText(key, '__MISSING__');
+    if (raw === '__MISSING__' || raw === '') return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      this.remove(key);
+      return fallback;
+    }
+  },
+  setJSON(key, value) {
+    return this.setText(key, JSON.stringify(value));
+  }
+};
+
+let D = StorageSafe.getJSON(LS_KEYS.contracts, []);
+let N = StorageSafe.getJSON(LS_KEYS.notes, []);
+let S = StorageSafe.getJSON(LS_KEYS.settings, {"brokerName":"مدیریت بیمه","agencyCode":"—","phone":"—","address":"—","commThird":5,"commHull":10,"commLiability":12});
+let editId = null;
+let activeContractInsts = null; 
+let licenseValidated = false;
+const jalaliPickerState = { inputEl: null, year: 0, month: 0 };
+const PAGES = ['dashboard','add','customers','installments','alerts','notes','search','recovery','settings','accounting'];
+
+function save(){
+  StorageSafe.setJSON(LS_KEYS.contracts, D);
+  updHeader();
+  renderAlerts();
+}
+
+// ═══════════ THEME SYSTEM ═══════════
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  StorageSafe.setText(LS_KEYS.theme, isDark ? 'dark' : 'light');
+  toast(isDark ? 'پوسته تاریک فعال شد 🌙' : 'پوسته روشن فعال شد ☀️', 'ok');
+}
+
+function initTheme() {
+  const saved = StorageSafe.getText(LS_KEYS.theme, '');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.body.classList.add('dark');
+  } else {
+    document.body.classList.remove('dark');
+  }
+}
+
+// ═══════════ HELPERS ═══════════
+function faToEn(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/[۰-۹]/g, d => '0123456789'['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)])
+    .replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+}
+
+const fa = n => String(n).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+
+function mfmt(el) {
+  let v = faToEn(el.value).replace(/[^0-9]/g, '');
+  el.value = v ? Number(v).toLocaleString('en-US') : '';
+}
+
+function pm(s) {
+  return parseInt(faToEn(s || '0').replace(/[^0-9]/g, '')) || 0;
+}
+
+function parseLocalDate(str) {
+  if (!str) return new Date();
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function normalizeDateInputText(raw) {
+  return faToEn(String(raw || ''))
+    .replace(/[\.\-]/g, '/')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function isoToJalaliInput(isoDate) {
+  const iso = String(isoDate || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d, 12, 0, 0);
+  const parts = new Intl.DateTimeFormat('en-US-u-ca-persian', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Tehran'
+  }).formatToParts(date);
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  if (!year || !month || !day) return '';
+  return `${year}/${month}/${day}`;
+}
+
+function getTodayJalaliInput() {
+  return isoToJalaliInput(getLocalTodayString());
+}
+
+function parseJalaliParts(rawDate) {
+  const raw = normalizeDateInputText(rawDate);
+  const m = raw.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+  if (!m) return null;
+  return { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) };
+}
+
+function isJalaliLeapYear(y) {
+  const p = ((y - 474) % 2820) + 474;
+  return (((p + 38) * 682) % 2816) < 682;
+}
+
+function getJalaliMonthLength(y, m) {
+  if (m <= 6) return 31;
+  if (m <= 11) return 30;
+  return isJalaliLeapYear(y) ? 30 : 29;
+}
+
+function markDateInputValidity(el, isValid, message = '') {
+  if (!el) return;
+  el.classList.toggle('date-invalid', !isValid);
+  el.setCustomValidity(isValid ? '' : message || 'تاریخ نامعتبر است');
+}
+
+function validateJalaliLive(el) {
+  if (!el) return true;
+  const val = String(el.value || '').trim();
+  if (!val) {
+    markDateInputValidity(el, true);
+    return true;
+  }
+  if (val.length < 10) {
+    markDateInputValidity(el, true);
+    return true;
+  }
+  const iso = parseDateInputToIso(val);
+  const ok = !!iso;
+  markDateInputValidity(el, ok, 'تاریخ شمسی معتبر نیست');
+  return ok;
+}
+
+function maskJalaliInput(el) {
+  if (!el) return;
+  const digits = faToEn(String(el.value || '')).replace(/[^0-9]/g, '').slice(0, 8);
+  const y = digits.slice(0, 4);
+  let m = digits.slice(4, 6);
+  let d = digits.slice(6, 8);
+
+  if (m.length === 2) {
+    let mv = Number(m);
+    if (mv < 1) mv = 1;
+    if (mv > 12) mv = 12;
+    m = pad2(mv);
+  }
+
+  if (d.length === 2) {
+    let dv = Number(d);
+    const yv = y.length === 4 ? Number(y) : 1400;
+    const mv = m.length === 2 ? Number(m) : 1;
+    const maxDay = getJalaliMonthLength(yv, mv);
+    if (dv < 1) dv = 1;
+    if (dv > maxDay) dv = maxDay;
+    d = pad2(dv);
+  }
+
+  let out = y;
+  if (digits.length > 4) out += '/' + m;
+  if (digits.length > 6) out += '/' + d;
+  el.value = out;
+  validateJalaliLive(el);
+}
+
+function setTodayForDateInput(inputEl, refreshPreview = false) {
+  if (!inputEl) return;
+  inputEl.value = getTodayJalaliInput();
+  validateJalaliLive(inputEl);
+  if (refreshPreview) calcPrev();
+  else validateManualPrev();
+}
+
+function setTodayById(id, refreshPreview = false) {
+  setTodayForDateInput(document.getElementById(id), refreshPreview);
+}
+
+function jalaliToGregorian(jy, jm, jd) {
+  let y = Number(jy) - 979;
+  let m = Number(jm) - 1;
+  let d = Number(jd) - 1;
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+
+  let jDayNo = 365 * y + Math.floor(y / 33) * 8 + Math.floor(((y % 33) + 3) / 4);
+  const jMonth = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+  for (let i = 0; i < m; i++) jDayNo += jMonth[i];
+  jDayNo += d;
+
+  let gDayNo = jDayNo + 79;
+  let gy = 1600 + 400 * Math.floor(gDayNo / 146097);
+  gDayNo %= 146097;
+
+  let leap = true;
+  if (gDayNo >= 36525) {
+    gDayNo--;
+    gy += 100 * Math.floor(gDayNo / 36524);
+    gDayNo %= 36524;
+    if (gDayNo >= 365) gDayNo++;
+    else leap = false;
+  }
+
+  gy += 4 * Math.floor(gDayNo / 1461);
+  gDayNo %= 1461;
+  if (gDayNo >= 366) {
+    leap = false;
+    gDayNo--;
+    gy += Math.floor(gDayNo / 365);
+    gDayNo %= 365;
+  }
+
+  const gMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let gm = 0;
+  while (gm < 12 && gDayNo >= gMonth[gm]) {
+    gDayNo -= gMonth[gm];
+    gm++;
+  }
+  return { gy, gm: gm + 1, gd: gDayNo + 1 };
+}
+
+function parseDateInputToIso(rawDate) {
+  const raw = normalizeDateInputText(rawDate);
+  if (!raw) return '';
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const m = raw.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!m) return '';
+  const jy = Number(m[1]);
+  const jm = Number(m[2]);
+  const jd = Number(m[3]);
+  if (jy < 1200 || jy > 1700 || jm < 1 || jm > 12 || jd < 1 || jd > 31) return '';
+
+  const g = jalaliToGregorian(jy, jm, jd);
+  if (!g) return '';
+  const iso = `${g.gy}-${pad2(g.gm)}-${pad2(g.gd)}`;
+
+  if (isoToJalaliInput(iso) !== `${jy}/${pad2(jm)}/${pad2(jd)}`) return '';
+  return iso;
+}
+
+function normalizeJalaliField(el) {
+  if (!el) return;
+  maskJalaliInput(el);
+  const iso = parseDateInputToIso(el.value);
+  if (!el.value.trim()) return;
+  if (iso) {
+    el.value = isoToJalaliInput(iso);
+    markDateInputValidity(el, true);
+  } else {
+    markDateInputValidity(el, false, 'تاریخ شمسی معتبر نیست');
+  }
+}
+
+function openJalaliPickerForInputById(id) {
+  openJalaliPickerForInput(document.getElementById(id));
+}
+
+function openJalaliPickerForInput(inputEl) {
+  if (!inputEl) return;
+  const parsed = parseJalaliParts(normalizeDateInputText(inputEl.value));
+  const today = parseJalaliParts(getTodayJalaliInput()) || { y: 1400, m: 1, d: 1 };
+  jalaliPickerState.inputEl = inputEl;
+  jalaliPickerState.year = parsed ? parsed.y : today.y;
+  jalaliPickerState.month = parsed ? parsed.m : today.m;
+  const backdrop = document.getElementById('jalali-picker-backdrop');
+  if (backdrop) backdrop.classList.add('open');
+  renderJalaliPicker();
+}
+
+function closeJalaliPicker() {
+  const backdrop = document.getElementById('jalali-picker-backdrop');
+  if (backdrop) backdrop.classList.remove('open');
+}
+
+function shiftJalaliPickerMonth(delta) {
+  let y = jalaliPickerState.year;
+  let m = jalaliPickerState.month + delta;
+  while (m > 12) { m -= 12; y++; }
+  while (m < 1) { m += 12; y--; }
+  jalaliPickerState.year = y;
+  jalaliPickerState.month = m;
+  renderJalaliPicker();
+}
+
+function renderJalaliPicker() {
+  const title = document.getElementById('jalali-picker-title');
+  const daysEl = document.getElementById('jalali-picker-days');
+  if (!title || !daysEl) return;
+
+  const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const y = jalaliPickerState.year;
+  const m = jalaliPickerState.month;
+  title.textContent = `${monthNames[m - 1]} ${fa(y)}`;
+
+  const firstG = jalaliToGregorian(y, m, 1);
+  if (!firstG) {
+    daysEl.innerHTML = '';
+    return;
+  }
+
+  const jsDay = new Date(firstG.gy, firstG.gm - 1, firstG.gd).getDay();
+  const firstIdx = (jsDay + 1) % 7; // Saturday-first index
+  const len = getJalaliMonthLength(y, m);
+  const selected = jalaliPickerState.inputEl ? parseJalaliParts(normalizeDateInputText(jalaliPickerState.inputEl.value)) : null;
+  const today = parseJalaliParts(getTodayJalaliInput());
+
+  let html = '';
+  for (let i = 0; i < firstIdx; i++) html += '<div class="jalali-empty"></div>';
+  for (let d = 1; d <= len; d++) {
+    const sel = selected && selected.y === y && selected.m === m && selected.d === d;
+    const isToday = today && today.y === y && today.m === m && today.d === d;
+    html += `<button type="button" class="jalali-day${sel ? ' sel' : ''}${isToday ? ' today' : ''}" onclick="selectJalaliPickerDay(${d})">${fa(d)}</button>`;
+  }
+  daysEl.innerHTML = html;
+}
+
+function selectJalaliPickerDay(day) {
+  const y = jalaliPickerState.year;
+  const m = jalaliPickerState.month;
+  const value = `${y}/${pad2(m)}/${pad2(day)}`;
+  const inputEl = jalaliPickerState.inputEl;
+  if (inputEl) {
+    inputEl.value = value;
+    normalizeJalaliField(inputEl);
+    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  closeJalaliPicker();
+}
+
+function selectJalaliPickerToday() {
+  const today = parseJalaliParts(getTodayJalaliInput());
+  if (!today) return;
+  jalaliPickerState.year = today.y;
+  jalaliPickerState.month = today.m;
+  selectJalaliPickerDay(today.d);
+}
+
+function formatPersianDate(dateInput, withTime = false) {
+  const d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+  const opts = withTime
+    ? { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' }
+    : { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Tehran' };
+  return new Intl.DateTimeFormat('fa-IR-u-ca-persian', opts).format(d);
+}
+
+function fdate(d) {
+  if (!d) return '—';
+  try {
+    return formatPersianDate(parseLocalDate(d), false);
+  } catch (e) {
+    return d;
+  }
+}
+
+function fdatetime(d) {
+  return formatPersianDate(d, true);
+}
+
+function strHash32(str) {
+  let h = 2166136261;
+  const s = String(str || '');
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0').toUpperCase();
+}
+
+function normalizeContract(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const installments = Array.isArray(raw.installments) ? raw.installments : [];
+  const mappedInstallments = installments.map((ins, idx) => ({
+    title: String(ins?.title || `قسط ${fa(idx + 1)}`),
+    amount: Number(ins?.amount || 0),
+    due: String(ins?.due || ''),
+    status: ['در انتظار', 'پرداخت شده', 'معوق'].includes(ins?.status) ? ins.status : 'در انتظار',
+    payType: String(ins?.payType || '')
+  }));
+  return {
+    id: String(raw.id || Date.now().toString()),
+    name: String(raw.name || '').trim(),
+    national: String(raw.national || '').replace(/[^0-9]/g, ''),
+    phone: String(raw.phone || '').replace(/[^0-9]/g, ''),
+    policy: String(raw.policy || ''),
+    type: String(raw.type || ''),
+    car: String(raw.car || ''),
+    total: Number(raw.total || 0),
+    start: String(raw.start || ''),
+    expire: String(raw.expire || ''),
+    count: Number(raw.count || mappedInstallments.length || 1),
+    paytype: String(raw.paytype || ''),
+    pct: Number(raw.pct || 25),
+    note: String(raw.note || ''),
+    installments: mappedInstallments,
+    createdAt: raw.createdAt || new Date().toISOString()
+  };
+}
+
+function addM(ds, m) {
+  const d = ds ? parseLocalDate(ds) : new Date();
+  d.setMonth(d.getMonth() + m);
+  const y = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mm}-${dd}`;
+}
+
+function dDiff(ds) {
+  if (!ds) return null;
+  const target = parseLocalDate(ds);
+  const today = new Date();
+  target.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((target - today) / 86400000);
+}
+
+function pCnt(c) {
+  return c.installments.filter(i => i.status === 'پرداخت شده').length;
+}
+
+function pAmt(c) {
+  return c.installments.filter(i => i.status === 'پرداخت شده').reduce((a, b) => a + b.amount, 0);
+}
+
+function prg(c) {
+  return c.count ? Math.round(pCnt(c) / c.count * 100) : 0;
+}
+
+function progBar(pct) {
+  return `<div class="pw"><div class="pb" style="width:${pct}%"></div></div>`;
+}
+
+function getLocalTodayString() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Tehran'
+  }).formatToParts(new Date());
+  const y = parts.find(p => p.type === 'year')?.value || '1970';
+  const m = parts.find(p => p.type === 'month')?.value || '01';
+  const d = parts.find(p => p.type === 'day')?.value || '01';
+  return `${y}-${m}-${d}`;
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = '';
+  if (type) el.classList.add(type);
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function copyText(btn, text) {
+  const done = () => {
+    if (!btn || !btn.textContent) return;
+    const old = btn.textContent;
+    btn.textContent = 'کپی شد ✓';
+    setTimeout(() => {
+      btn.textContent = old;
+    }, 1200);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => {});
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+  done();
+}
+
+function toggleSB() {
+  document.getElementById('sb')?.classList.toggle('open');
+  document.getElementById('sbov')?.classList.toggle('open');
+}
+
+function closeSB() {
+  document.getElementById('sb')?.classList.remove('open');
+  document.getElementById('sbov')?.classList.remove('open');
+}
+
+function pctChg(v) {
+  const val = parseInt(v || 25);
+  document.getElementById('pctlbl').textContent = fa(val) + '٪';
+  document.getElementById('pctshow').textContent = fa(val) + '٪';
+  calcPrev();
+}
+
+function carChg() {
+  const isOther = document.getElementById('fcar').value === 'سایر';
+  document.getElementById('car-o').style.display = isOther ? 'block' : 'none';
+}
+
+function buildI(total, count, pct, startDate) {
+  const prepay = Math.round(total * pct / 100);
+  const rest = Math.max(total - prepay, 0);
+  const each = count > 1 ? Math.round(rest / (count - 1)) : prepay;
+  const rows = [];
+  const base = startDate || getLocalTodayString();
+  for (let i = 0; i < count; i++) {
+    const isFirst = i === 0;
+    const amount = count === 1 ? total : (isFirst ? prepay : each);
+    rows.push({
+      title: isFirst ? 'پیش پرداخت' : `قسط ${fa(i + 1)}`,
+      amount,
+      due: addM(base, i),
+      status: 'در انتظار',
+      payType: ''
+    });
+  }
+  const currentSum = rows.reduce((a, b) => a + b.amount, 0);
+  const diff = total - currentSum;
+  if (rows.length && diff !== 0) rows[rows.length - 1].amount += diff;
+  return rows;
+}
+
+function updateHeaderBranding() {
+  document.getElementById('hdr-agency-title').textContent = S.brokerName || 'سامانه بیمه';
+  document.getElementById('hdr-agency-sub').textContent = `کد نمایندگی: ${S.agencyCode || '—'}`;
+  document.getElementById('hdr-credit-badge').textContent = (S.agencyCode || 'CRM').toString().slice(0, 8);
+  const setBroker = document.getElementById('set-broker');
+  if (setBroker) {
+    setBroker.value = S.brokerName || '';
+    document.getElementById('set-code').value = S.agencyCode || '';
+    document.getElementById('set-phone').value = S.phone || '';
+    document.getElementById('set-address').value = S.address || '';
+    document.getElementById('set-comm-third').value = S.commThird ?? 5;
+    document.getElementById('set-comm-hull').value = S.commHull ?? 10;
+    document.getElementById('set-comm-liability').value = S.commLiability ?? 12;
+  }
+}
+
+function updHeader() {
+  document.getElementById('h-c').textContent = fa(D.length);
+  let monthDue = 0;
+  let overdue = 0;
+  const now = new Date();
+  const m = now.getMonth();
+  const y = now.getFullYear();
+  D.forEach(c => (c.installments || []).forEach(i => {
+    if (!i?.due || i.status === 'پرداخت شده') return;
+    const d = parseLocalDate(i.due);
+    if (d.getMonth() === m && d.getFullYear() === y) monthDue++;
+    if (dDiff(i.due) < 0) overdue++;
+  }));
+  document.getElementById('h-d').textContent = fa(monthDue);
+  document.getElementById('h-o').textContent = fa(overdue);
+}
+
+function getMonthStats() {
+  const now = new Date();
+  const m = now.getMonth();
+  const y = now.getFullYear();
+  let monthDueAmt = 0;
+  let monthPaidAmt = 0;
+  D.forEach(c => (c.installments || []).forEach(i => {
+    if (!i?.due) return;
+    const d = parseLocalDate(i.due);
+    if (d.getMonth() !== m || d.getFullYear() !== y) return;
+    monthDueAmt += i.amount || 0;
+    if (i.status === 'پرداخت شده') monthPaidAmt += i.amount || 0;
+  }));
+  return { monthDueAmt, monthPaidAmt };
+}
+
+function autoUpdateOverdue() {
+  const today = getLocalTodayString();
+  D.forEach(c => (c.installments || []).forEach(i => {
+    if (!i?.due || i.status === 'پرداخت شده') return;
+    i.status = i.due < today ? 'معوق' : 'در انتظار';
+  }));
+}
+
+function go(page) {
+  if (!licenseValidated && !checkLic()) {
+    return;
+  }
+  if (!PAGES.includes(page)) page = 'dashboard';
+  PAGES.forEach(p => {
+    document.getElementById(`pg-${p}`)?.classList.toggle('on', p === page);
+    document.getElementById(`ni-${p}`)?.classList.toggle('on', p === page);
+    document.getElementById(`bn-${p}`)?.classList.toggle('on', p === page);
+  });
+  if (page === 'dashboard') renderDash();
+  if (page === 'customers') renderC();
+  if (page === 'installments') renderI();
+  if (page === 'alerts') renderAlerts();
+  if (page === 'notes') renderNotes();
+  if (page === 'search') renderS();
+  if (page === 'recovery') renderRecovery();
+  if (page === 'settings') updateSettingsLicensePanel();
+  if (page === 'accounting') updateAccountingView();
+}
+
+function renderC() {
+  const q = (document.getElementById('cq')?.value || '').toLowerCase();
+  const t = document.getElementById('cft')?.value || '';
+  const sort = document.getElementById('csort')?.value || 'new';
+  const tbl = document.getElementById('ctbl');
+  if (!tbl) return;
+  let list = D.filter(c => {
+    const okQ = !q || `${c.name} ${c.national} ${c.phone}`.toLowerCase().includes(q);
+    const okT = !t || c.type === t;
+    return okQ && okT;
+  });
+  if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+  if (sort === 'prog') list.sort((a, b) => prg(b) - prg(a));
+  if (sort === 'total') list.sort((a, b) => b.total - a.total);
+  if (sort === 'new') list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  if (!list.length) {
+    tbl.innerHTML = '<tr><td colspan="7"><div class="emp"><div class="ei">👥</div><p>موردی یافت نشد</p></div></td></tr>';
+    return;
+  }
+  tbl.innerHTML = list.map(c => `
+    <tr>
+      <td data-label="نام و مشخصات"><strong>${c.name}</strong><br><small style="color:var(--muted)">${c.national}</small></td>
+      <td data-label="تماس">${c.phone}</td>
+      <td data-label="نوع بیمه"><span class="bd bu">${c.type}</span></td>
+      <td data-label="خودرو">${c.car}</td>
+      <td data-label="پیشرفت">${progBar(prg(c))}</td>
+      <td data-label="خوش قولی"><span class="bd ${prg(c) >= 70 ? 'bgg' : 'bo'}">${fa(prg(c))}٪</span></td>
+      <td data-label="عملیات" style="white-space:nowrap">
+        <button class="btn bgh bxs" onclick="showDetail('${c.id}')">👁</button>
+        <button class="btn bp bxs" onclick="editC('${c.id}')">✏️</button>
+        <button class="btn bred bxs" onclick="delC('${c.id}')">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function setInstallmentStatus(contractId, idx, status) {
+  const c = D.find(x => x.id === contractId);
+  if (!c || !c.installments?.[idx]) return;
+  c.installments[idx].status = status;
+  if (status === 'پرداخت شده') c.installments[idx].payType = c.paytype || 'ثبت سیستمی';
+  save();
+  renderI();
+  renderDash();
+}
+
+function renderI() {
+  autoUpdateOverdue();
+  const q = (document.getElementById('iq')?.value || '').toLowerCase();
+  const sf = document.getElementById('ift')?.value || '';
+  const wrap = document.getElementById('ilist');
+  if (!wrap) return;
+  const cards = D.filter(c => c.name.toLowerCase().includes(q)).map(c => {
+    const rows = (c.installments || []).map((ins, i) => ({ ins, i })).filter(({ ins }) => !sf || ins.status === sf);
+    if (!rows.length) return '';
+    return `
+      <div class="card">
+        <div class="ctitle">${c.name} <small style="color:var(--muted)">(${c.type})</small></div>
+        <div class="itbl">
+          <div class="ir ih"><span>#</span><span>عنوان</span><span>مبلغ</span><span>سررسید</span><span>عملیات</span></div>
+          ${rows.map(({ ins, i }) => `
+            <div class="ir">
+              <span data-col="#">${fa(i + 1)}</span>
+              <span data-col="عنوان">${ins.title}</span>
+              <span data-col="مبلغ">${(ins.amount || 0).toLocaleString('fa-IR')} ت</span>
+              <span data-col="سررسید">${fdate(ins.due)}</span>
+              <span data-col="وضعیت" style="display:flex;gap:6px;flex-wrap:wrap">
+                <span class="bd ${ins.status === 'پرداخت شده' ? 'bgg' : (ins.status === 'معوق' ? 'br' : 'bo')}">${ins.status}</span>
+                <button class="btn bgreen bxs" onclick="setInstallmentStatus('${c.id}', ${i}, 'پرداخت شده')">پرداخت</button>
+                <button class="btn bgh bxs" onclick="setInstallmentStatus('${c.id}', ${i}, 'در انتظار')">انتظار</button>
+              </span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+  wrap.innerHTML = cards || '<div class="emp"><div class="ei">📋</div><p>موردی برای نمایش وجود ندارد</p></div>';
+}
+
+function renderAlerts() {
+  autoUpdateOverdue();
+  const crit = [];
+  const norm = [];
+  const imm = [];
+  const soon = [];
+  const renew = [];
+  D.forEach(c => {
+    (c.installments || []).forEach(ins => {
+      if (ins.status === 'پرداخت شده') return;
+      const diff = dDiff(ins.due);
+      if (diff === null) return;
+      if (diff < -30) crit.push({ c, ins, diff });
+      else if (diff < 0) norm.push({ c, ins, diff });
+      else if (diff <= 1) imm.push({ c, ins, diff });
+      else if (diff <= 30) soon.push({ c, ins, diff });
+    });
+    const exDiff = dDiff(c.expire);
+    if (exDiff !== null && exDiff >= 0 && exDiff <= 30) renew.push({ c, exDiff });
+  });
+  const renderList = (arr, fn) => arr.length ? arr.map(fn).join('') : '<div class="emp"><p>موردی یافت نشد</p></div>';
+  const itemHtml = ({ c, ins, diff }) => `<div class="ali ${diff <= 1 ? 'urg' : 'soon'}"><div class="adot ${diff < 0 ? 'dr' : 'dy'}"></div><div class="ai"><div class="an">${c.name}</div><div class="as">${ins.title} - ${(ins.amount || 0).toLocaleString('fa-IR')} ت</div></div><div class="ad">${diff < 0 ? fa(Math.abs(diff)) + ' روز گذشته' : (diff === 0 ? 'امروز' : fa(diff) + ' روز')}</div></div>`;
+  document.getElementById('al-ov-crit').innerHTML = renderList(crit, itemHtml);
+  document.getElementById('al-ov-norm').innerHTML = renderList(norm, itemHtml);
+  document.getElementById('al-due-imm').innerHTML = renderList(imm, itemHtml);
+  document.getElementById('al-sn').innerHTML = renderList(soon, itemHtml);
+  document.getElementById('al-renewals').innerHTML = renew.length ? renew.map(({ c, exDiff }) => `<div class="ali"><div class="adot dy"></div><div class="ai"><div class="an">${c.name}</div><div class="as">انقضا: ${fdate(c.expire)}</div></div><div class="ad">${exDiff === 0 ? 'امروز' : fa(exDiff) + ' روز'}</div></div>`).join('') : '<div class="emp"><p>فرصت تمدیدی یافت نشد</p></div>';
+  document.getElementById('sb-al').textContent = fa(crit.length + norm.length + imm.length);
+  document.getElementById('sb-al').style.display = (crit.length + norm.length + imm.length) ? 'inline-block' : 'none';
+  document.getElementById('sb-ov').style.display = crit.length ? 'inline-block' : 'none';
+}
+
+function addNote() {
+  const text = document.getElementById('qntxt').value.trim();
+  if (!text) return toast('متن یادداشت خالی است', 'warn');
+  N.unshift({ id: Date.now().toString(), text, createdAt: new Date().toISOString() });
+  StorageSafe.setJSON(LS_KEYS.notes, N);
+  document.getElementById('qntxt').value = '';
+  renderNotes();
+  toast('یادداشت ذخیره شد', 'ok');
+}
+
+function delNote(id) {
+  N = N.filter(n => n.id !== id);
+  StorageSafe.setJSON(LS_KEYS.notes, N);
+  renderNotes();
+}
+
+function renderNotes() {
+  const wrap = document.getElementById('nlist');
+  if (!wrap) return;
+  if (!N.length) {
+    wrap.innerHTML = '<div class="emp"><div class="ei">📝</div><p>یادداشتی ثبت نشده است</p></div>';
+    return;
+  }
+  wrap.innerHTML = N.map(n => `<div class="card"><div style="font-size:12px;line-height:1.9">${n.text}</div><div style="display:flex;justify-content:space-between;margin-top:8px"><small style="color:var(--muted)">${fdatetime(n.createdAt)}</small><button class="btn bred bxs" onclick="delNote('${n.id}')">حذف</button></div></div>`).join('');
+}
+
+function renderS() {
+  const q = (document.getElementById('sq')?.value || '').toLowerCase();
+  const type = document.getElementById('stype')?.value || '';
+  const car = (document.getElementById('scar')?.value || '').toLowerCase();
+  const stat = document.getElementById('sstat')?.value || '';
+  const min = pm(document.getElementById('smin')?.value || '0');
+  const maxRaw = pm(document.getElementById('smax')?.value || '0');
+  const max = maxRaw || Number.MAX_SAFE_INTEGER;
+  const tbl = document.getElementById('stbl');
+  if (!tbl) return;
+  const list = D.filter(c => {
+    const byQ = !q || c.name.toLowerCase().includes(q);
+    const byType = !type || c.type === type;
+    const byCar = !car || c.car.toLowerCase().includes(car);
+    const byAmt = c.total >= min && c.total <= max;
+    const byStat = !stat || (c.installments || []).some(i => i.status === stat);
+    return byQ && byType && byCar && byAmt && byStat;
+  });
+  if (!list.length) {
+    tbl.innerHTML = '<tr><td colspan="6"><div class="emp"><p>نتیجه‌ای پیدا نشد</p></div></td></tr>';
+    return;
+  }
+  tbl.innerHTML = list.map(c => `<tr><td>${c.name}</td><td>${c.type}</td><td>${c.car}</td><td>${c.total.toLocaleString('fa-IR')} ت</td><td>${fa(c.count)}</td><td><button class="btn bgh bxs" onclick="showDetail('${c.id}')">جزئیات</button></td></tr>`).join('');
+}
+
+function showDetail(id) {
+  const c = D.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('mtitle').textContent = `جزئیات قرارداد ${c.name}`;
+  const paid = pAmt(c);
+  document.getElementById('mbody').innerHTML = `
+    <div style="font-size:12px;line-height:2">
+      <div>کد ملی: <strong>${c.national}</strong></div>
+      <div>تماس: <strong>${c.phone}</strong></div>
+      <div>نوع بیمه: <strong>${c.type}</strong></div>
+      <div>خودرو: <strong>${c.car}</strong></div>
+      <div>مبلغ کل: <strong>${c.total.toLocaleString('fa-IR')} ت</strong></div>
+      <div>وصول شده: <strong style="color:var(--green)">${paid.toLocaleString('fa-IR')} ت</strong></div>
+      <div>مانده: <strong style="color:var(--orange)">${(c.total - paid).toLocaleString('fa-IR')} ت</strong></div>
+      <hr>
+      <div style="font-size:11px;color:var(--muted)">${(c.note || 'بدون یادداشت')}</div>
+    </div>
+  `;
+  document.getElementById('mov').classList.add('open');
+}
+
+function closeMod() {
+  document.getElementById('mov').classList.remove('open');
+}
+
+function getSnapshots() {
+  return StorageSafe.getJSON(LS_KEYS.snapshots, []);
+}
+
+function setSnapshots(items) {
+  StorageSafe.setJSON(LS_KEYS.snapshots, items.slice(0, 15));
+}
+
+function makeSnapshot(label = 'اسنپ شات') {
+  const list = getSnapshots();
+  list.unshift({
+    id: Date.now().toString(),
+    label,
+    createdAt: new Date().toISOString(),
+    contracts: D,
+    notes: N,
+    settings: S
+  });
+  setSnapshots(list);
+  renderRecovery();
+}
+
+function createManualSnapshot() {
+  makeSnapshot('نقطه بازگشت دستی');
+  toast('نقطه بازگشت ایجاد شد', 'ok');
+}
+
+function restoreSnapshot(id) {
+  const item = getSnapshots().find(x => x.id === id);
+  if (!item) return;
+  if (!confirm('این نسخه بازیابی شود؟ اطلاعات فعلی جایگزین می‌شود.')) return;
+  D = item.contracts || [];
+  N = item.notes || [];
+  S = item.settings || S;
+  StorageSafe.setJSON(LS_KEYS.notes, N);
+  StorageSafe.setJSON(LS_KEYS.settings, S);
+  save();
+  updateHeaderBranding();
+  renderRecovery();
+  renderDash();
+  toast('بازیابی انجام شد', 'ok');
+}
+
+function renderRecovery() {
+  const sizeEl = document.getElementById('rec-size');
+  const cntEl = document.getElementById('rec-cnt');
+  const tbl = document.getElementById('rectbl');
+  if (!sizeEl || !cntEl || !tbl) return;
+  let totalBytes = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const v = localStorage.getItem(k) || '';
+      totalBytes += (k.length + v.length) * 2;
+    }
+  } catch (e) {
+    totalBytes = 0;
+  }
+  sizeEl.textContent = `${(totalBytes / 1024).toFixed(1)} KB`;
+  cntEl.textContent = fa(D.length);
+  const snaps = getSnapshots();
+  if (!snaps.length) {
+    tbl.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">نقطه بازگشتی ثبت نشده است.</td></tr>';
+    return;
+  }
+  tbl.innerHTML = snaps.map(s => `<tr><td>${s.label}</td><td>${fdatetime(s.createdAt)}</td><td>${fa((s.contracts || []).length)}</td><td><button class="btn bp bxs" onclick="restoreSnapshot('${s.id}')">بازیابی</button></td></tr>`).join('');
+}
+
+function saveSettings() {
+  S = {
+    brokerName: document.getElementById('set-broker').value.trim() || 'مدیریت بیمه',
+    agencyCode: document.getElementById('set-code').value.trim() || '—',
+    phone: document.getElementById('set-phone').value.trim() || '—',
+    address: document.getElementById('set-address').value.trim() || '—',
+    commThird: Number(document.getElementById('set-comm-third').value || 5),
+    commHull: Number(document.getElementById('set-comm-hull').value || 10),
+    commLiability: Number(document.getElementById('set-comm-liability').value || 12)
+  };
+  StorageSafe.setJSON(LS_KEYS.settings, S);
+  updateHeaderBranding();
+  toast('تنظیمات ذخیره شد', 'ok');
+}
+
+function updateAccountingView() {
+  const targetInput = document.getElementById('acc-target-input');
+  if (!targetInput) return;
+  const target = pm(targetInput.value || '0');
+  let collected = 0;
+  let pending = 0;
+  let totalCommission = 0;
+  let age30 = 0;
+  let age90 = 0;
+  let agePlus = 0;
+  D.forEach(c => {
+    const rate = c.type === 'ثالث' ? Number(S.commThird || 0) : (c.type === 'بدنه' ? Number(S.commHull || 0) : Number(S.commLiability || 0));
+    (c.installments || []).forEach(i => {
+      const fee = Math.round((i.amount || 0) * rate / 100);
+      totalCommission += fee;
+      const diff = dDiff(i.due);
+      if (i.status === 'پرداخت شده') collected += fee;
+      else pending += fee;
+      if (i.status === 'معوق' && diff !== null) {
+        const overdueDays = Math.abs(diff);
+        if (overdueDays < 30) age30 += i.amount || 0;
+        else if (overdueDays <= 90) age90 += i.amount || 0;
+        else agePlus += i.amount || 0;
+      }
+    });
+  });
+  const pct = target ? Math.min(100, Math.round(collected / target * 100)) : 0;
+  document.getElementById('acc-collected-now').textContent = collected.toLocaleString('fa-IR');
+  document.getElementById('acc-target-now').textContent = target.toLocaleString('fa-IR');
+  document.getElementById('acc-pct-now').textContent = fa(pct) + '٪';
+  document.getElementById('acc-target-bar').style.width = `${pct}%`;
+  document.getElementById('acc-comm-collected').textContent = collected.toLocaleString('fa-IR');
+  document.getElementById('acc-comm-pending').textContent = pending.toLocaleString('fa-IR');
+  document.getElementById('acc-comm-total').textContent = totalCommission.toLocaleString('fa-IR');
+  document.getElementById('age-30').textContent = age30.toLocaleString('fa-IR');
+  document.getElementById('age-90').textContent = age90.toLocaleString('fa-IR');
+  document.getElementById('age-plus').textContent = agePlus.toLocaleString('fa-IR');
+
+  const projWrap = document.getElementById('acc-projections-container');
+  const projections = [];
+  for (let i = 0; i < 12; i++) projections.push({ month: i, due: 0 });
+  const now = new Date();
+  D.forEach(c => (c.installments || []).forEach(ins => {
+    if (!ins?.due || ins.status === 'پرداخت شده') return;
+    const d = parseLocalDate(ins.due);
+    const delta = (d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth());
+    if (delta >= 0 && delta < 12) projections[delta].due += ins.amount || 0;
+  }));
+  projWrap.innerHTML = projections.map(p => {
+    const d = new Date(now.getFullYear(), now.getMonth() + p.month, 1);
+    const label = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'long', year: 'numeric', timeZone: 'Asia/Tehran' }).format(d);
+    return `<div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>${label}</span><strong>${p.due.toLocaleString('fa-IR')} ت</strong></div><div class="pw"><div class="pb" style="width:${Math.min(100, p.due / 1000000 * 100)}%"></div></div></div>`;
+  }).join('');
+}
+
+// ═══════════ OFFLINE LICENSE & PIRACY CONTROL SYSTEM ═══════════
+const licSecret = "KOSAR_SEC_2026_SALT";
+const licMaxFails = 5;
+const licLockMinutes = 10;
+
+function normalizeMid(input) {
+  return String(input || '')
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[^A-Z0-9-]/g, '');
+}
+
+function normalizeLicenseKey(input) {
+  let s = String(input || '').trim().replace(/\s+/g, '');
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  const mod = s.length % 4;
+  if (mod) s = s + '='.repeat(4 - mod);
+  return s;
+}
+
+function getLicFailState() {
+  try {
+    const raw = StorageSafe.getText(LS_KEYS.licenseFailState, '');
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? parsed : { fails: 0, lockUntil: 0 };
+  } catch (e) {
+    return { fails: 0, lockUntil: 0 };
+  }
+}
+
+function setLicFailState(state) {
+  StorageSafe.setJSON(LS_KEYS.licenseFailState, {
+    fails: Number(state.fails || 0),
+    lockUntil: Number(state.lockUntil || 0)
+  });
+}
+
+function clearLicFailState() {
+  StorageSafe.remove(LS_KEYS.licenseFailState);
+}
+
+function registerLicenseFailure(hideAndFail, msg) {
+  const state = getLicFailState();
+  const now = Date.now();
+  if (state.lockUntil && now > state.lockUntil) {
+    state.fails = 0;
+    state.lockUntil = 0;
+  }
+  state.fails += 1;
+  if (state.fails >= licMaxFails) {
+    state.lockUntil = now + licLockMinutes * 60 * 1000;
+    setLicFailState(state);
+    return hideAndFail(`⛔ فعال‌سازی موقتا قفل شد.<br>به دلیل ورود مکرر لایسنس نامعتبر، لطفا ${licLockMinutes} دقیقه بعد دوباره تلاش کنید.`);
+  }
+  setLicFailState(state);
+  const remaining = licMaxFails - state.fails;
+  return hideAndFail(`${msg}<br><small>تعداد تلاش باقی‌مانده: ${remaining}</small>`);
+}
+
+function getMachineID() {
+  let id = StorageSafe.getText(LS_KEYS.machineId, '');
+  if (!id) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let segment1 = '';
+    let segment2 = '';
+    for (let i = 0; i < 4; i++) {
+      segment1 += chars.charAt(Math.floor(Math.random() * chars.length));
+      segment2 += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    id = `KS-${segment1}-${segment2}`;
+    StorageSafe.setText(LS_KEYS.machineId, id);
+  }
+  return id;
+}
+
+function genChecksum(mac, exp) {
+  let str = mac + exp + licSecret;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36).toUpperCase();
+}
+
+function checkLic() {
+  const mid = normalizeMid(getMachineID());
+  const lic = StorageSafe.getText(LS_KEYS.license, '');
+  const overlay = document.getElementById('lic-overlay');
+  const todayStr = getLocalTodayString();
+  const container = document.getElementById('app-container');
+  const failState = getLicFailState();
+  const hideAndFail = (msg = '') => {
+    licenseValidated = false;
+    if (container) container.style.display = 'none';
+    showLicOverlay(msg);
+    return false;
+  };
+  
+  // Anti-Piracy system: System clock manipulation detection
+  let lastOpened = StorageSafe.getText(LS_KEYS.lastOpened, todayStr);
+  if (todayStr < lastOpened) {
+    return hideAndFail("⚠️ خطای امنیتی سیستم:<br>تاریخ دستگاه شما معتبر نیست یا به عقب کشیده شده است. لطفا تنظیمات زمان سیستم خود را بررسی کنید.");
+  }
+
+  if (failState.lockUntil && Date.now() < failState.lockUntil) {
+    const mins = Math.max(1, Math.ceil((failState.lockUntil - Date.now()) / 60000));
+    return hideAndFail(`⛔ فعال‌سازی موقتا قفل شده است.<br>لطفا ${mins} دقیقه دیگر مجددا تلاش کنید.`);
+  }
+
+  StorageSafe.setText(LS_KEYS.lastOpened, todayStr);
+
+  if (!lic) {
+    return hideAndFail();
+  }
+
+  try {
+    // Robust cleanup to handle manual space/newline copy-paste errors
+    const normalizedKey = normalizeLicenseKey(lic);
+    const sanitizedKey = normalizedKey.replace(/[^A-Za-z0-9+/=]/g, '');
+    if (!sanitizedKey || sanitizedKey.length < 16) {
+      return registerLicenseFailure(hideAndFail, "❌ لایسنس نامعتبر است.<br>لطفا یک لایسنس معتبر وارد کنید.");
+    }
+    const decoded = atob(sanitizedKey);
+    const parts = decoded.split(':');
+    if (parts.length !== 3) {
+      return registerLicenseFailure(hideAndFail, "❌ فرمت لایسنس معتبر نیست.<br>فقط کلید صادرشده توسط پنل مدیریت قابل قبول است.");
+    }
+    const [rawMid, expDate, checksum] = parts;
+    const keyMid = normalizeMid(rawMid);
+
+    if (!/^KS-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(keyMid)) {
+      return registerLicenseFailure(hideAndFail, "❌ فرمت شناسه دستگاه در لایسنس معتبر نیست.");
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(expDate)) {
+      return registerLicenseFailure(hideAndFail, "❌ تاریخ انقضای لایسنس معتبر نیست.");
+    }
+    if (!/^[A-Z0-9]+$/.test(checksum || '')) {
+      return registerLicenseFailure(hideAndFail, "❌ امضای لایسنس معتبر نیست.");
+    }
+
+    const parsedExp = parseLocalDate(expDate);
+    const expNormalized = `${parsedExp.getFullYear()}-${String(parsedExp.getMonth() + 1).padStart(2, '0')}-${String(parsedExp.getDate()).padStart(2, '0')}`;
+    if (expNormalized !== expDate) {
+      return registerLicenseFailure(hideAndFail, "❌ تاریخ انقضای لایسنس معتبر نیست.");
+    }
+    
+    if (keyMid !== mid) {
+      return registerLicenseFailure(hideAndFail, "❌ خطای لایسنس:<br>این لایسنس برای دستگاه دیگری صادر شده است.");
+    }
+
+    if (checksum !== genChecksum(keyMid, expDate)) {
+      return registerLicenseFailure(hideAndFail, "❌ خطای لایسنس:<br>امضای دیجیتال لایسنس معتبر نیست یا مخدوش شده است.");
+    }
+
+    if (todayStr > expDate) {
+      return hideAndFail(`🔴 لایسنس شما منقضی شده است!<br>تاریخ انقضا: ${fdate(expDate)} بوده است.`);
+    }
+
+    licenseValidated = true;
+    clearLicFailState();
+    if (overlay) overlay.style.display = 'none';
+    if (container) container.style.display = 'block'; // Reveal app DOM
+    updateSidebarLicenseInfo(expDate);
+    return true;
+  } catch (e) {
+    return registerLicenseFailure(hideAndFail, "❌ لایسنس نامعتبر است.<br>لطفا یک لایسنس معتبر وارد کنید.");
+  }
+}
+
+function showLicOverlay(errorMsg = '') {
+  const mid = getMachineID();
+  let overlay = document.getElementById('lic-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'lic-overlay';
+    overlay.style = "position:fixed; inset:0; background:rgba(9,17,28,0.96); z-index:99999; display:flex; align-items:center; justify-content:center; padding:15px; backdrop-filter:blur(8px); direction:rtl;";
+    document.body.appendChild(overlay);
+  }
+  
+  overlay.innerHTML = `
+    <div class="card" style="width:100%; max-width:460px; border:1px solid #1e2d3d; background:#111c2a; color:#fff; text-align:center; padding:25px; border-radius:18px; box-shadow:0 20px 50px rgba(0,0,0,0.5); font-family:'Vazirmatn',sans-serif;">
+      <div class="hbadge" style="width:50px; height:50px; font-size:22px; margin:0 auto 12px; background:linear-gradient(135deg, var(--gold), #b87318);">ب</div>
+      <h2 style="font-size:16px; font-weight:800; color:var(--gold2); margin-bottom:6px;">سامانه مدیریت اقساط بیمه</h2>
+      <p style="font-size:11px; color:#889ab0; margin-bottom:15px;">نیاز به فعال‌سازی لایسنس تجاری</p>
+      
+      ${errorMsg ? `<div style="background:rgba(220,38,38,0.15); border:1px solid #ef4444; border-radius:8px; padding:10px; font-size:11.5px; color:#f87171; margin-bottom:15px; text-align:right;">${errorMsg}</div>` : ''}
+      
+      <div style="background:#09111c; padding:12px; border-radius:8px; border:1px solid #1e2d3d; margin-bottom:15px; text-align:right;">
+        <div style="font-size:10px; color:#889ab0; margin-bottom:4px;">شناسه اختصاصی این دستگاه (Machine ID):</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-size:14px; letter-spacing:1px; color:#fff;">${mid}</strong>
+          <button class="btn bgh bxs" style="padding:4px 8px; border-color:#24354a; color:#fff;" onclick="copyText(this, '${mid}')">📋 کپی شناسه</button>
+        </div>
+      </div>
+
+      <div class="fgrp" style="text-align:right; margin-bottom:15px;">
+        <label style="color:#889ab0; font-size:11px;">کد فعال‌سازی لایسنس:</label>
+        <input id="overlay-lic-input" type="text" placeholder="کد لایسنس دریافتی را اینجا بچسبانید" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="background:#09111c; border-color:#24354a; color:#fff; text-align:center; font-size:12px; letter-spacing:1px; padding:10px; direction:ltr;">
+      </div>
+
+      <button class="btn bg" style="width:100%; justify-content:center; padding:10px; margin-bottom:15px;" onclick="activateFromOverlay()">🔑 فعال‌سازی نرم‌افزار</button>
+      
+      <hr style="border-color:#1e2d3d;">
+      <div style="font-size:11px; color:#889ab0; margin-top:12px; line-height:1.6;">
+        جهت تهیه لایسنس فعال‌سازی (دمو / ۶ ماهه / ۱ ساله) با پشتیبانی تماس بگیرید:<br>
+        <strong style="color:var(--gold2); font-size:12px;">تلفن پشتیبانی فروش: 09004334923</strong>
+      </div>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+}
+
+function activateFromOverlay() {
+  const rawKey = document.getElementById('overlay-lic-input').value.trim();
+  const key = normalizeLicenseKey(rawKey);
+  if (!key) return toast('لطفا کد لایسنس را وارد کنید', 'warn');
+  if (key.length < 16 || key.length > 500) return toast('فرمت کد لایسنس معتبر نیست', 'err');
+  
+  const previous = StorageSafe.getText(LS_KEYS.license, '');
+  StorageSafe.setText(LS_KEYS.license, key);
+  if (checkLic()) {
+    toast('نرم‌افزار با موفقیت فعال شد! ✅', 'ok');
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    if (previous) StorageSafe.setText(LS_KEYS.license, previous);
+    else StorageSafe.remove(LS_KEYS.license);
+  }
+}
+
+function updateSidebarLicenseInfo(expDate) {
+  const el = document.getElementById('sb-lic-expiry');
+  if (el) {
+    el.innerHTML = `اعتبار لایسنس تا: <strong style="color:var(--green)">${fdate(expDate)}</strong>`;
+  }
+}
+
+function updateSettingsLicensePanel() {
+  const statusEl = document.getElementById('set-lic-status');
+  const midEl = document.getElementById('set-mid');
+  const inputEl = document.getElementById('set-license-input');
+  if (midEl) midEl.textContent = getMachineID();
+  if (inputEl) inputEl.value = StorageSafe.getText(LS_KEYS.license, '');
+  if (!statusEl) return;
+
+  const key = StorageSafe.getText(LS_KEYS.license, '');
+  const fail = getLicFailState();
+  if (!key) {
+    statusEl.innerHTML = 'وضعیت لایسنس: <strong style="color:var(--orange)">ثبت نشده</strong>';
+    if (!HAS_PERSISTENT_STORAGE) {
+      statusEl.innerHTML += '<br><small style="color:var(--red)">⚠️ ذخیره‌سازی پایدار مرورگر غیرفعال است (Private Mode/محدودیت سیستم). روی برخی گوشی‌ها ممکن است لایسنس پس از بستن مرورگر باقی نماند.</small>';
+    }
+    return;
+  }
+
+  try {
+    const decoded = atob(normalizeLicenseKey(key));
+    const parts = decoded.split(':');
+    if (parts.length !== 3) throw new Error('bad format');
+    const expDate = parts[1];
+    const left = dDiff(expDate);
+    if (left === null) throw new Error('bad exp');
+    if (left < 0) {
+      statusEl.innerHTML = `وضعیت لایسنس: <strong style="color:var(--red)">منقضی</strong> - تاریخ: ${fdate(expDate)}`;
+    } else {
+      statusEl.innerHTML = `وضعیت لایسنس: <strong style="color:var(--green)">فعال</strong> - تا ${fdate(expDate)} (${fa(left)} روز باقی‌مانده)`;
+    }
+  } catch (e) {
+    statusEl.innerHTML = 'وضعیت لایسنس: <strong style="color:var(--red)">نامعتبر</strong>';
+  }
+
+  if (fail.lockUntil && Date.now() < fail.lockUntil) {
+    const mins = Math.max(1, Math.ceil((fail.lockUntil - Date.now()) / 60000));
+    statusEl.innerHTML += `<br><small style="color:var(--orange)">قفل امنیتی فعال است (${mins} دقیقه باقی‌مانده)</small>`;
+  }
+
+  if (!HAS_PERSISTENT_STORAGE) {
+    statusEl.innerHTML += '<br><small style="color:var(--red)">⚠️ ذخیره‌سازی پایدار مرورگر غیرفعال است؛ برای پایداری لایسنس در موبایل، از حالت عادی مرورگر استفاده کنید.</small>';
+  }
+}
+
+function openLicenseActivation() {
+  showLicOverlay('در این بخش می‌توانید لایسنس جدید را وارد یا جایگزین کنید.');
+}
+
+function applyLicenseFromSettings() {
+  const inputEl = document.getElementById('set-license-input');
+  if (!inputEl) return;
+  const raw = inputEl.value.trim();
+  const key = normalizeLicenseKey(raw);
+  if (!key) return toast('کد لایسنس را وارد کنید', 'warn');
+
+  const previous = StorageSafe.getText(LS_KEYS.license, '');
+  StorageSafe.setText(LS_KEYS.license, key);
+  if (checkLic()) {
+    clearLicFailState();
+    updateSettingsLicensePanel();
+    toast('لایسنس جدید با موفقیت اعمال شد', 'ok');
+    return;
+  }
+
+  if (previous) StorageSafe.setText(LS_KEYS.license, previous);
+  else StorageSafe.remove(LS_KEYS.license);
+  updateSettingsLicensePanel();
+  toast('لایسنس وارد شده معتبر نبود', 'err');
+}
+
+function copyMachineIdFromSettings(btn) {
+  copyText(btn, getMachineID());
+}
+
+function clearLicenseLockState() {
+  clearLicFailState();
+  updateSettingsLicensePanel();
+  toast('قفل تلاش ناموفق پاک شد', 'ok');
+}
+
+function removeCurrentLicense() {
+  if (!confirm('لایسنس فعلی حذف شود و سیستم دوباره نیاز به فعال‌سازی داشته باشد؟')) return;
+  StorageSafe.remove(LS_KEYS.license);
+  licenseValidated = false;
+  updateSettingsLicensePanel();
+  checkLic();
+  toast('لایسنس حذف شد', 'warn');
+}
+
+// ═══════════ MANUAL UNEQUAL INSTALLMENTS Restructuring RESTORER & VALIDATOR ═══════════
+function validateManualPrev() {
+  const total = pm(document.getElementById('ftot').value);
+  const rows = document.querySelectorAll('#prevrows .ir');
+  let sum = 0;
+  
+  rows.forEach(r => {
+    const amtInput = r.querySelector('.man-amount');
+    if (amtInput) {
+      sum += pm(amtInput.value);
+    }
+  });
+
+  const diff = total - sum;
+  const msgEl = document.getElementById('prev-val-msg');
+  const saveBtn = document.getElementById('sbtn');
+
+  if (diff === 0) {
+    msgEl.innerHTML = `<span style="color:var(--green)">✅ مبالغ تایید شد (${total.toLocaleString('fa-IR')} ت).</span>`;
+    saveBtn.disabled = false;
+    saveBtn.style.opacity = '1';
+    saveBtn.style.pointerEvents = 'auto';
+  } else {
+    const absDiff = Math.abs(diff).toLocaleString('fa-IR');
+    msgEl.innerHTML = `<span style="color:var(--red)">❌ مغایرت: ${sum.toLocaleString('fa-IR')} ت (${absDiff} ت ${diff > 0 ? 'کسری' : 'اضافه'}).</span>`;
+    saveBtn.disabled = true;
+    saveBtn.style.opacity = '0.5';
+    saveBtn.style.pointerEvents = 'none';
+  }
+}
+
+function calcPrev() {
+  const total = pm(document.getElementById('ftot').value);
+  const count = parseInt(document.getElementById('fcnt').value);
+  const pct = parseInt(document.getElementById('fpct-slider').value);
+  const start = parseDateInputToIso(document.getElementById('fst').value.trim()) || '';
+  const w = document.getElementById('prevwrap');
+  
+  if(!total){ w.style.display='none'; return; }
+  w.style.display='block';
+
+  let ins;
+  if (activeContractInsts && activeContractInsts.length === count) {
+    ins = activeContractInsts;
+  } else {
+    ins = buildI(total, count, pct, start);
+  }
+
+  document.getElementById('pamt').textContent = Math.round(total*pct/100).toLocaleString('fa-IR') + ' ت';
+  document.getElementById('eamt').textContent = count>1 ? Math.round((total - (total*pct/100))/(count-1)).toLocaleString('fa-IR') + ' ت' : '—';
+
+  document.getElementById('prevrows').innerHTML = ins.map((x, i) => `
+    <div class="ir" style="grid-template-columns: 28px 1.2fr 1.5fr 1.5fr 1fr; gap: 6px; align-items: center;">
+      <span data-col="#">${fa(i+1)}</span>
+      <span data-col="عنوان"><input type="text" class="man-title" value="${x.title}" oninput="validateManualPrev()"></span>
+      <span data-col="مبلغ"><input type="text" class="man-amount" value="${x.amount.toLocaleString('en-US')}" oninput="mfmt(this); validateManualPrev()" inputmode="numeric"></span>
+      <span data-col="سررسید" class="hx">
+        <div class="date-inline">
+          <input type="text" class="man-due" inputmode="numeric" placeholder="1405/04/15" value="${isoToJalaliInput(x.due || '')}" oninput="maskJalaliInput(this)" onchange="validateManualPrev()" onblur="normalizeJalaliField(this)">
+          <button type="button" class="btn bgh bxs" onclick="openJalaliPickerForInput(this.parentElement.querySelector('input.man-due'))">📅</button>
+          <button type="button" class="btn bgh bxs" onclick="setTodayForDateInput(this.parentElement.querySelector('input.man-due'))">امروز</button>
+        </div>
+      </span>
+      <span data-col="وضعیت"><span class="bd bw">${x.status || 'در انتظار'}</span></span>
+    </div>
+  `).join('');
+
+  validateManualPrev();
+}
+
+// ═══════════ CORE REGISTRATION MANAGEMENT ═══════════
+function saveC(){
+  const name=document.getElementById('fn').value.trim();
+  const nat=faToEn(document.getElementById('fnat').value.trim()).replace(/[^0-9]/g, '');
+  const ph=faToEn(document.getElementById('fph').value.trim()).replace(/[^0-9]/g, '');
+  const pol=document.getElementById('fpol').value.trim();
+  const type=document.getElementById('ftype').value;
+  let car=document.getElementById('fcar').value;
+  if(car==='سایر') car=document.getElementById('fcar2').value.trim()||'سایر';
+  const total=pm(document.getElementById('ftot').value);
+  const startRaw=document.getElementById('fst').value.trim();
+  const expireRaw=document.getElementById('fex').value.trim();
+  const start=parseDateInputToIso(startRaw);
+  const expire=parseDateInputToIso(expireRaw);
+  const count=parseInt(document.getElementById('fcnt').value);
+  const paytype=document.getElementById('fpt').value;
+  const pct=parseInt(document.getElementById('fpct-slider').value);
+  const note=document.getElementById('fnote').value;
+
+  if(!name) return toast('نام مشتری الزامی است','err');
+  if(!nat||nat.length!==10) return toast('کد ملی باید ۱۰ رقم باشد','err');
+  if(!ph||ph.length<10) return toast('شماره تماس معتبر نیست','err');
+  if(!type) return toast('نوع بیمه را انتخاب کنید','err');
+  if(!car) return toast('نوع خودرو را انتخاب کنید','err');
+  if(!total) return toast('مبلغ کل بیمه الزامی است','err');
+  if(startRaw && !start) return toast('تاریخ شروع باید شمسی معتبر باشد (مثال: 1405/03/15)','err');
+  if(expireRaw && !expire) return toast('تاریخ انقضا باید شمسی معتبر باشد (مثال: 1406/03/15)','err');
+
+  makeSnapshot('پیش از ثبت قرارداد');
+
+  let insts = [];
+  const rows = document.querySelectorAll('#prevrows .ir');
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const title = r.querySelector('.man-title').value.trim() || `قسط ${fa(i+1)}`;
+    const amount = pm(r.querySelector('.man-amount').value);
+    const dueRaw = r.querySelector('.man-due').value.trim();
+    const due = parseDateInputToIso(dueRaw);
+    if (dueRaw && !due) {
+      return toast(`تاریخ سررسید قسط ${fa(i + 1)} باید شمسی معتبر باشد`,'err');
+    }
+    
+    const oldStatus = (activeContractInsts && activeContractInsts[i]) ? activeContractInsts[i].status : 'در انتظار';
+    const oldPayType = (activeContractInsts && activeContractInsts[i]) ? activeContractInsts[i].payType : '';
+
+    insts.push({
+      title,
+      amount,
+      due,
+      status: oldStatus,
+      payType: oldPayType
+    });
+  }
+
+  const c={id:editId||Date.now().toString(),name,national:nat,phone:ph,policy:pol,type,car,total,start,expire,count,paytype,pct,note,installments:insts,createdAt:editId?(D.find(x=>x.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString()};
+
+  if (editId) {
+    const idx = D.findIndex(x => x.id === editId);
+    if (idx !== -1) {
+      D[idx] = c;
+    } else {
+      D.push(c);
+    }
+    toast('قرارداد ویرایش شد ✅', 'ok');
+  } else {
+    D.push(c);
+    toast('قرارداد ذخیره شد ✅', 'ok');
+  }
+  
+  activeContractInsts = null;
+  save();resetF();go('customers');
+}
+
+function resetF(){
+  const todayStr = getLocalTodayString();
+  ['fn','fnat','fph','fpol','ftot','fnote','fcar2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['ftype','fcar'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fcnt').value='6';
+  document.getElementById('fpt').value='لینک صندوق';
+  document.getElementById('fpct-slider').value=25;pctChg(25);
+  document.getElementById('fst').value=isoToJalaliInput(todayStr);
+  document.getElementById('fex').value=isoToJalaliInput(addM(todayStr,12));
+  document.getElementById('prevwrap').style.display='none';
+  document.getElementById('car-o').style.display='none';
+  document.getElementById('ftitle').textContent='قرارداد جدید';
+  editId=null;
+  activeContractInsts = null;
+}
+
+function editC(id){
+  const c=D.find(x=>x.id===id);if(!c)return;
+  editId=id;
+  activeContractInsts = c.installments; 
+
+  document.getElementById('fn').value=c.name;
+  document.getElementById('fnat').value=c.national;
+  document.getElementById('fph').value=c.phone;
+  document.getElementById('fpol').value=c.policy||'';
+  document.getElementById('ftype').value=c.type;
+  const carEl=document.getElementById('fcar');
+  const hasOpt=[...carEl.options].some(o=>o.value===c.car);
+  if(hasOpt){carEl.value=c.car;}else{carEl.value='سایر';document.getElementById('fcar2').value=c.car;document.getElementById('car-o').style.display='block';}
+  document.getElementById('ftot').value=c.total.toLocaleString('en-US');
+  document.getElementById('fst').value=isoToJalaliInput(c.start||'');
+  document.getElementById('fex').value=isoToJalaliInput(c.expire||'');
+  document.getElementById('fcnt').value=c.count;
+  document.getElementById('fpt').value=c.paytype;
+  document.getElementById('fpct-slider').value=c.pct;pctChg(c.pct);
+  document.getElementById('fnote').value=c.note||'';
+  document.getElementById('ftitle').textContent='ویرایش قرارداد';
+  
+  calcPrev();go('add');
+}
+
+function delC(id){
+  if(!confirm('آیا از حذف این قرارداد اطمینان دارید؟'))return;
+  makeSnapshot('پیش از حذف قرارداد');
+  D=D.filter(c=>c.id!==id);save();renderC();renderDash();toast('حذف شد','err');
+}
+
+// ═══════════ RENDER RECENT TABLE ═══════════
+function renderDashTable(){
+  const tbl=document.getElementById('dtbl');
+  if(!tbl) return;
+  if(!D.length){tbl.innerHTML='<tr><td colspan="6"><div class="emp"><div class="ei">📂</div><p>قراردادی ثبت نشده</p></div></td></tr>';return;}
+  tbl.innerHTML=[...D].reverse().slice(0,7).map(c=>{
+    const pp=prg(c);
+    return`<tr>
+      <td data-label="نام بیمه‌گذار"><strong>${c.name}</strong><br><small style="color:var(--muted)">${c.national}</small></td>
+      <td data-label="نوع بیمه"><span class="bd bu">${c.type}</span></td>
+      <td data-label="خودرو">${c.car}</td>
+      <td data-label="مبلغ کل">${c.total.toLocaleString('fa-IR')} ت</td>
+      <td data-label="پیشرفت وصول" style="min-width:88px"><div style="font-size:9.5px;color:var(--muted);margin-bottom:2px">${fa(pCnt(c))}/${fa(c.count)}</div>${progBar(pp)}</td>
+      <td data-label="عملیات" style="white-space:nowrap">
+        <button class="btn bgh bxs" onclick="showDetail('${c.id}')">👁</button>
+        <button class="btn bp bxs" onclick="editC('${c.id}')">✏️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════ FINANCIAL AND SNAPSHOT EXECUTIONS (SECURE MULTI-ARRAY BACKUPS) ═══════════
+function analyzeBackupReadiness() {
+  const issues = [];
+  const warnings = [];
+  const contractIds = new Set();
+  const now = getLocalTodayString();
+
+  if (!Array.isArray(D)) {
+    issues.push('ساختار قراردادها معتبر نیست.');
+  } else {
+    D.forEach((c, idx) => {
+      const row = idx + 1;
+      if (!c || typeof c !== 'object') {
+        issues.push(`قرارداد ${row} خراب است.`);
+        return;
+      }
+      if (!c.id) warnings.push(`قرارداد ${row} شناسه ندارد.`);
+      if (c.id && contractIds.has(c.id)) issues.push(`شناسه تکراری قرارداد: ${c.id}`);
+      if (c.id) contractIds.add(c.id);
+      if (!c.name || !String(c.name).trim()) issues.push(`نام مشتری در قرارداد ${row} خالی است.`);
+      if (!c.national || String(c.national).replace(/[^0-9]/g, '').length !== 10) warnings.push(`کد ملی قرارداد ${row} ناقص است.`);
+      if (!c.phone || String(c.phone).replace(/[^0-9]/g, '').length < 10) warnings.push(`شماره تماس قرارداد ${row} ناقص است.`);
+      if (!Array.isArray(c.installments) || c.installments.length === 0) issues.push(`اقساط قرارداد ${row} تعریف نشده است.`);
+
+      const total = Number(c.total || 0);
+      let sumInstallments = 0;
+      (c.installments || []).forEach((ins, ii) => {
+        const amount = Number(ins?.amount || 0);
+        sumInstallments += amount;
+        if (amount <= 0) warnings.push(`مبلغ قسط ${ii + 1} در قرارداد ${row} معتبر نیست.`);
+        if (ins?.due && !/^\d{4}-\d{2}-\d{2}$/.test(String(ins.due))) {
+          warnings.push(`تاریخ قسط ${ii + 1} در قرارداد ${row} استاندارد نیست.`);
+        }
+      });
+
+      if (total <= 0) issues.push(`مبلغ کل قرارداد ${row} معتبر نیست.`);
+      if (Math.abs(sumInstallments - total) > 1000) {
+        warnings.push(`جمع اقساط قرارداد ${row} با مبلغ کل اختلاف دارد.`);
+      }
+
+      if (c.expire && /^\d{4}-\d{2}-\d{2}$/.test(String(c.expire)) && c.expire < now) {
+        warnings.push(`بیمه‌نامه قرارداد ${row} منقضی شده است.`);
+      }
+    });
+  }
+
+  const result = {
+    criticalCount: issues.length,
+    warningCount: warnings.length,
+    issues,
+    warnings,
+    checkedAt: new Date().toISOString(),
+    checkedAtFa: fdatetime(new Date())
+  };
+  return result;
+}
+
+function renderBackupHealth(result) {
+  const el = document.getElementById('backup-health-report');
+  if (!el) return;
+  const color = result.criticalCount > 0 ? 'var(--red)' : (result.warningCount > 0 ? 'var(--orange)' : 'var(--green)');
+  const status = result.criticalCount > 0 ? 'نیازمند اصلاح' : (result.warningCount > 0 ? 'قابل بکاپ با هشدار' : 'سالم و آماده بکاپ');
+  const topIssues = result.issues.slice(0, 2).concat(result.warnings.slice(0, 2));
+  el.style.color = color;
+  el.innerHTML = `گزارش سلامت: <strong>${status}</strong> | خطای بحرانی: ${fa(result.criticalCount)} | هشدار: ${fa(result.warningCount)}<br>${topIssues.length ? topIssues.join(' | ') : 'بدون مشکل'}`;
+}
+
+function runBackupHealthCheck(showToast = false) {
+  const result = analyzeBackupReadiness();
+  renderBackupHealth(result);
+  if (showToast) {
+    if (result.criticalCount > 0) toast('بکاپ‌گیری ممکن است ناقص باشد؛ ابتدا ایرادهای بحرانی را اصلاح کنید', 'err');
+    else if (result.warningCount > 0) toast('سلامت بکاپ: قابل قبول با هشدار', 'warn');
+    else toast('سلامت بکاپ: عالی و بدون مشکل ✅', 'ok');
+  }
+  return result;
+}
+
+function saveJSON(){
+  const health = runBackupHealthCheck(false);
+  if (health.criticalCount > 0) {
+    const ok = confirm(`⚠️ ${fa(health.criticalCount)} ایراد بحرانی در داده‌ها وجود دارد.\nبکاپ ادامه پیدا کند؟`);
+    if (!ok) return;
+  }
+
+  const payload = {
+    contracts: D,
+    notes: N,
+    settings: S,
+    snapshots: getSnapshots(),
+    theme: StorageSafe.getText(LS_KEYS.theme, 'light'),
+    licenseKey: StorageSafe.getText(LS_KEYS.license, ''),
+    machineId: StorageSafe.getText(LS_KEYS.machineId, ''),
+    lastOpened: StorageSafe.getText(LS_KEYS.lastOpened, ''),
+    exportedInIranTime: fdatetime(new Date()),
+    healthSummary: {
+      criticalCount: health.criticalCount,
+      warningCount: health.warningCount,
+      checkedAt: health.checkedAt,
+      checkedAtFa: health.checkedAtFa
+    }
+  };
+  const data = {
+    schemaVersion: 5,
+    exportedAt: new Date().toISOString(),
+    exportedAtFa: fdatetime(new Date()),
+    timezone: 'Asia/Tehran',
+    calendar: 'persian',
+    payload,
+    checksum: strHash32(JSON.stringify(payload))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'insurance-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  toast('فایل JSON ذخیره شد 💾','ok');
+  document.getElementById('fsbar').className = 'fsbar';
+  document.getElementById('fsbar').textContent = '✅ آخرین نسخه‌پشتیبان: ' + fdatetime(new Date());
+  const guideEl = document.getElementById('backup-guide-status');
+  if (guideEl) guideEl.textContent = 'آخرین بکاپ موفق: ' + fdatetime(new Date());
+}
+
+function loadJSON(event){
+  const file = event.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try{
+      const data = JSON.parse(ev.target.result);
+      let contracts = [];
+      let notes = [];
+      let settings = null;
+      let snapshots = [];
+      let theme = '';
+      let licenseKey = '';
+      let machineId = '';
+      let lastOpened = '';
+
+      if (data && data.schemaVersion >= 5 && data.payload && typeof data.payload === 'object') {
+        const expected = strHash32(JSON.stringify(data.payload));
+        if (!data.checksum || expected !== data.checksum) {
+          throw new Error('checksum mismatch');
+        }
+        contracts = Array.isArray(data.payload.contracts) ? data.payload.contracts : [];
+        notes = Array.isArray(data.payload.notes) ? data.payload.notes : [];
+        settings = data.payload.settings || null;
+        snapshots = Array.isArray(data.payload.snapshots) ? data.payload.snapshots : [];
+        theme = String(data.payload.theme || '');
+        licenseKey = String(data.payload.licenseKey || '');
+        machineId = String(data.payload.machineId || '');
+        lastOpened = String(data.payload.lastOpened || '');
+      } else if (data && Array.isArray(data.contracts)) {
+        // Backward compatibility with older backups
+        contracts = data.contracts;
+        notes = Array.isArray(data.notes) ? data.notes : [];
+        settings = data.settings || null;
+      } else {
+        throw new Error('invalid structure');
+      }
+
+      if (!confirm(`${fa(contracts.length)} قرارداد یافت شد.\nبارگذاری شود؟ (داده‌های فعلی جایگزین می‌شوند)`)) return;
+      
+      makeSnapshot('پیش از بارگذاری پشتیبان خارجی');
+      
+      D = contracts.map(normalizeContract).filter(c => c && c.name && c.total > 0);
+      N = notes;
+      if (settings) {
+        S = settings;
+        StorageSafe.setJSON(LS_KEYS.settings, S);
+        updateHeaderBranding();
+      }
+      if (snapshots.length) setSnapshots(snapshots);
+      if (theme) StorageSafe.setText(LS_KEYS.theme, theme);
+      if (licenseKey) StorageSafe.setText(LS_KEYS.license, licenseKey);
+      if (machineId) StorageSafe.setText(LS_KEYS.machineId, machineId);
+      if (lastOpened) StorageSafe.setText(LS_KEYS.lastOpened, lastOpened);
+      
+      save();
+      StorageSafe.setJSON(LS_KEYS.notes, N);
+      renderDash();
+      toast('داده‌ها بارگذاری و همگام‌سازی شدند ✅','ok');
+      const guideEl = document.getElementById('backup-guide-status');
+      if (guideEl) guideEl.textContent = 'آخرین بازیابی موفق: ' + fdatetime(new Date());
+      runBackupHealthCheck(false);
+    } catch(err) {
+      toast('فایل بکاپ معتبر نیست یا خراب شده است ❌','err');
+    }
+  };
+  r.readAsText(file);
+  event.target.value = '';
+}
+
+function exportCSV(){
+  if(!D.length)return toast('داده‌ای وجود ندارد','err');
+  const rows = [['نام','کد ملی','تماس','نوع بیمه','خودرو','شماره بیمه','مبلغ کل','اقساط','پیش‌پرداخت%','نوع پرداخت','شروع','انقضا','ش.قسط','عنوان','مبلغ قسط','سررسید','وضعیت','نوع پرداخت قسط']];
+  D.forEach(c=>c.installments.forEach((ins,i)=>{
+    rows.push([c.name,c.national,c.phone,c.type,c.car,c.policy||'',c.total,c.count,c.pct+'%',c.paytype,c.start||'',c.expire||'',i+1,ins.title,ins.amount,ins.due||'',ins.status,ins.payType||'']);
+  }));
+  const csv = '\uFEFF'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = 'insurance-csv-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  toast('فایل اکسل دانلود شد 📊','ok');
+}
+
+function doClear(){
+  if(!confirm('⚠️ ابتدا از JSON ذخیره بگیرید!\n\nتمام داده‌ها پاک می‌شوند. ادامه؟'))return;
+  makeSnapshot('پیش از ریست کلی سیستم');
+  D=[];N=[];save();
+  StorageSafe.setJSON(LS_KEYS.notes, []);
+  renderDash();
+  toast('همه داده‌ها پاک شدند','err');
+}
+
+async function clearRuntimeBrowserCache(){
+  const hasData = D.length > 0 || N.length > 0;
+  const msg = hasData
+    ? 'این عملیات فقط کش موقت مرورگر را پاک می‌کند و داده‌های اصلی حذف نمی‌شوند.\n\nبرای اطمینان یک اسنپ‌شات داخلی ثبت می‌شود. ادامه می‌دهید؟'
+    : 'کش موقت مرورگر پاک شود و برنامه یک‌بار با بارگذاری تمیز اجرا شود؟';
+  if (!confirm(msg)) return;
+
+  try {
+    makeSnapshot('پیش از پاکسازی کش مرورگر');
+  } catch (e) {}
+
+  let removedCaches = 0;
+
+  try {
+    sessionStorage.clear();
+  } catch (e) {}
+
+  try {
+    if ('caches' in window && window.isSecureContext) {
+      const keys = await caches.keys();
+      for (const k of keys) {
+        const ok = await caches.delete(k);
+        if (ok) removedCaches++;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        try { await reg.update(); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+
+  const now = Date.now();
+  const sep = location.search ? '&' : '?';
+  const nextUrl = `${location.pathname}${location.search}${sep}refresh=${now}${location.hash}`;
+  toast(`پاکسازی کش انجام شد (${fa(removedCaches)} مورد)؛ در حال بارگذاری مجدد...`, 'ok');
+  setTimeout(() => {
+    location.replace(nextUrl);
+  }, 450);
+}
+
+// ═══════════ DASHBOARD MASTER RENDER ═══════════
+function renderDash(){
+  autoUpdateOverdue();
+  let paid=0,pend=0,ov=0,totAmt=0,paidAmt=0;
+  D.forEach(c=>{
+    totAmt+=c.total;
+    c.installments.forEach(i=>{
+      if(i.status==='پرداخت شده'){paid++;paidAmt+=i.amount;}
+      else if(i.status==='معوق') ov++;
+      else pend++;
+    });
+  });
+  document.getElementById('sc-c').textContent=fa(D.length);
+  document.getElementById('sc-p').textContent=fa(paid);
+  document.getElementById('sc-w').textContent=fa(pend);
+  document.getElementById('sc-o').textContent=fa(ov);
+  const rem=totAmt-paidAmt,pct=totAmt?Math.round(paidAmt/totAmt*100):0;
+  document.getElementById('fp').textContent=paidAmt.toLocaleString('fa-IR');
+  document.getElementById('fr').textContent=rem.toLocaleString('fa-IR');
+  document.getElementById('ft').textContent=totAmt.toLocaleString('fa-IR');
+  document.getElementById('fpct-text').textContent=fa(pct)+'٪';
+  document.getElementById('fbar').style.width=pct+'%';
+
+  const mStats = getMonthStats();
+  document.getElementById('m-due').textContent = mStats.monthDueAmt.toLocaleString('fa-IR');
+  document.getElementById('m-paid').textContent = mStats.monthPaidAmt.toLocaleString('fa-IR');
+
+  // due 7 days
+  let items=[];
+  D.forEach(c=>c.installments.forEach((ins,i)=>{
+    if(ins.status==='پرداخت شده')return;
+    const d=dDiff(ins.due);
+    if(d !== null&&d>=0&&d<=7) items.push({c,ins,i,d});
+  }));
+  items.sort((a,b)=>a.d-b.d);
+  document.getElementById('due7').innerHTML=items.length?items.map(({c,ins,d})=>`
+    <div class="ali ${d<=2?'urg':'soon'}">
+      <div class="adot ${d<=2?'dr':'dy'} ${d===0?'pulse':''}"></div>
+      <div class="ai"><div class="an">${c.name}</div><div class="as">${ins.title} — ${ins.amount.toLocaleString('fa-IR')} ت</div></div>
+      <div class="ad">${d===0?'امروز':d===1?'فردا':fa(d)+' روز دیگر'}</div>
+    </div>`).join('')
+    :'<div class="emp"><div class="ei">✅</div><p>سررسید فوری‌ای وجود ندارد</p></div>';
+
+  renderDashTable();
+  updHeader();
+}
+
+// ═══════════ INITIALIZATION SETUP ═══════════
+initTheme();
+updateHeaderBranding();
+document.getElementById('sb-mid').textContent = getMachineID();
+document.getElementById('app-container').style.display = 'none';
+
+// Core verification before launching features
+if (checkLic()) {
+  resetF();
+  renderDash();
+  renderAlerts();
+}
+updateSettingsLicensePanel();
+runBackupHealthCheck(false);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkLic();
+});
+
+window.addEventListener('pageshow', () => {
+  checkLic();
+});
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'kt3_lic' || e.key === 'kt3_mid' || e.key === 'kt3_last_opened') {
+    checkLic();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeJalaliPicker();
+});
+
+setInterval(() => {
+  if (licenseValidated) checkLic();
+}, 15000);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

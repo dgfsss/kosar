@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#071f3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<title>CRM و سامانه صدور لایسنس کارگزاران بیمه</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c0:#020b16;--c1:#071f3a;--c2:#1a72cc;--c3:#3b82f6;
+  --gold:#e8a020;--gold2:#f5c842;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;
+  --bg:#09111c;--card:#111c2a;--border:#1e2d3d;
+  --text:#f1f5f9;--muted:#889ab0;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body {
+  font-family: 'Vazirmatn', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 15px;
+  direction: rtl;
+}
+.wrap {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid var(--border);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.title-area h1 { font-size: 18px; font-weight: 800; color: var(--gold2); }
+.title-area p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* STATS */
+.sgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media(max-width:640px){ .sgrid { grid-template-columns: repeat(2, 1fr); } }
+.scard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.scard .sv { font-size: 20px; font-weight: 900; color: #fff; }
+.scard .sl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* CARDS */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 15px;
+}
+.ctitle {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ctitle::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: linear-gradient(var(--gold), #b87318);
+  border-radius: 2px;
+}
+
+/* FORM */
+.fg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media(max-width:480px){ .fg { grid-template-columns: 1fr; } }
+.fgrp { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+label { font-size: 11px; font-weight: bold; color: var(--muted); }
+input, select {
+  padding: 8px 11px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  width: 100%;
+}
+input:focus, select:focus { outline: none; border-color: var(--c3); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 9px;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.16s;
+}
+.btn:hover { transform: scale(1.02); }
+.bg { background: linear-gradient(135deg, var(--gold), #b87318); }
+.bp { background: var(--c2); }
+.bgreen { background: var(--green); }
+.bred { background: var(--red); }
+.bxs { padding: 4px 8px; font-size: 10.5px; border-radius: 6px; }
+
+/* TABLE */
+.tw { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
+th { background: rgba(255,255,255,0.02); padding: 10px; text-align: right; color: var(--muted); font-size: 10.5px; border-bottom: 1px solid var(--border); }
+td { padding: 10px; border-bottom: 1px solid var(--border); color: #fff; }
+tr:hover td { background: rgba(59,130,246,0.03); }
+
+/* BADGES */
+.bd { padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: bold; display: inline-block; }
+.bgg { background: rgba(22,163,74,0.15); color: #4ade80; }
+.br { background: rgba(220,38,38,0.15); color: #f87171; }
+
+#result-panel {
+  display: none;
+  background: rgba(22,163,74,0.08);
+  border: 1.5px solid var(--green);
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title-area">
+      <h1>🔐 سامانه یکپارچه مدیریت لایسنس و مشتریان</h1>
+      <p>پایگاه داده هوشمند و امن صدور کلیدهای فعال‌سازی نرم‌افزار</p>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="btn bp bxs" onclick="saveSalesBackup()">💾 پشتیبان دیتابیس فروش</button>
+      <button class="btn bxs bp" onclick="document.getElementById('ibackup').click()">📂 بازگردانی پشتیبان</button>
+      <input type="file" id="ibackup" accept=".json" style="display:none" onchange="loadSalesBackup(event)">
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="sgrid">
+    <div class="scard"><div class="sv" id="st-total">۰</div><div class="sl">کل لایسنس‌ها</div></div>
+    <div class="scard"><div class="sv" id="st-active" style="color:#4ade80">۰</div><div class="sl">لایسنس‌های فعال</div></div>
+    <div class="scard"><div class="sv" id="st-expired" style="color:#f87171">۰</div><div class="sl">منقضی‌شده</div></div>
+    <div class="scard"><div class="sv" id="st-demo" style="color:var(--gold2)">۰</div><div class="sl">نسخه‌های دمو</div></div>
+  </div>
+
+  <!-- GENERATOR & REGISTRATION FORM -->
+  <div class="card">
+    <div class="ctitle">ثبت مشتری و صدور لایسنس جدید</div>
+    <div class="fg">
+      <div class="fgrp">
+        <label>نام آژانس / خریدار *</label>
+        <input id="in-name" type="text" placeholder="مثال: کارگزاری بیمه ایران احمدی">
+      </div>
+      <div class="fgrp">
+        <label>شماره تماس خریدار *</label>
+        <input id="in-phone" type="tel" placeholder="مثال: 09123456789" style="direction: ltr;">
+      </div>
+      <div class="fgrp">
+        <label>شناسه دستگاه مشتری (Machine ID) *</label>
+        <input id="in-mid" type="text" placeholder="مثال: KS-A9F2-C3B1" style="direction: ltr; text-transform: uppercase;">
+      </div>
+      <div class="fgrp">
+        <label>نوع اشتراک و مدت زمان *</label>
+        <select id="in-duration">
+          <option value="7">دمو آزمایشی (۷ روزه)</option>
+          <option value="180">نسخه نقره‌ای (۶ ماهه)</option>
+          <option value="365" selected>نسخه طلایی (۱ ساله)</option>
+          <option value="3650">نسخه دائم العمر (۱۰ ساله)</option>
+        </select>
+      </div>
+    </div>
+    <div class="bgrp" style="margin-top:5px;">
+      <button class="btn bg" onclick="createLicense()">🔑 ثبت و صدور لایسنس فعال‌سازی</button>
+    </div>
+
+    <!-- Live Generated Key Panel -->
+    <div id="result-panel">
+      <div style="font-size:11.5px; font-weight:bold; color:#4ade80; margin-bottom:6px;">لایسنس با موفقیت در پایگاه داده ثبت و صادر شد:</div>
+      <textarea id="result-key" readonly style="height:70px; background:var(--bg); color:#fff; border:1px solid var(--border); text-align:center; font-size:12.5px; padding:10px; letter-spacing:1px; width:100%; border-radius:8px; resize:none; font-family:inherit; direction:ltr;"></textarea>
+      <button class="btn bgreen" style="margin-top:8px; width:100%;" onclick="copyResultKey(this)">📋 کپی کلید فعال‌سازی</button>
+    </div>
+  </div>
+
+  <!-- CUSTOMER LEDGER / DATABASE -->
+  <div class="card">
+    <div class="ctitle">دفتر ثبت لایسنس‌ها و مدیریت مشتریان</div>
+    <div style="margin-bottom:12px;">
+      <input id="q-search" type="text" placeholder="🔍 جستجو بر اساس نام آژانس، تلفن همراه یا شناسه دستگاه..." oninput="renderSales()" style="direction: rtl;">
+    </div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>نام آژانس / خریدار</th>
+            <th>شماره تلفن</th>
+            <th>شناسه دستگاه (MID)</th>
+            <th>نوع لایسنس</th>
+            <th>تاریخ انقضا</th>
+            <th>وضعیت سیستم</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody id="sales-tbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">کنترل حرفه‌ای پایگاه لایسنس</div>
+    <div id="db-health" style="font-size:12px; color:var(--muted); line-height:1.9; margin-bottom:10px;">در حال تحلیل دیتابیس...</div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="btn bp bxs" onclick="auditLicenseDb()">🔎 تحلیل سلامت دیتابیس</button>
+      <button class="btn bgreen bxs" onclick="repairLicenseDb()">🛠 تعمیر خودکار دیتابیس</button>
+      <button class="btn bp bxs" onclick="exportActiveLicensesCsv()">📤 خروجی CSV لایسنس‌های فعال</button>
+      <button class="btn bred bxs" onclick="purgeInvalidLicenses()">🧹 حذف رکوردهای نامعتبر</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const licSecret = "KOSAR_SEC_2026_SALT";
+const SALES_KEY = 'kt3_lic_sales';
+const SALES_BAK_KEY = 'kt3_lic_sales_bak';
+const memStore = {};
+const HAS_PERSISTENT_STORAGE = (() => {
+  try {
+    const k = '__ks6_storage_test__';
+    localStorage.setItem(k, '1');
+    localStorage.removeItem(k);
+    return true;
+  } catch (e) {
+    return false;
+  }
+})();
+
+const SafeStore = {
+  getText(key, fallback = '') {
+    try {
+      const v = localStorage.getItem(key);
+      return v == null ? fallback : v;
+    } catch (e) {
+      return key in memStore ? memStore[key] : fallback;
+    }
+  },
+  setText(key, value) {
+    const val = String(value);
+    memStore[key] = val;
+    try {
+      localStorage.setItem(key, val);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  getJSON(key, fallback) {
+    const raw = this.getText(key, '__MISSING__');
+    if (raw === '__MISSING__' || raw === '') return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return fallback;
+    }
+  },
+  setJSON(key, value) {
+    return this.setText(key, JSON.stringify(value));
+  }
+};
+
+function normalizePhone(input) {
+  return String(input || '').replace(/[^0-9]/g, '');
+}
+
+function normalizeLicenseRecord(row) {
+  if (!row || typeof row !== 'object') return null;
+  const mid = normalizeMid(row.mid);
+  if (!/^KS-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(mid)) return null;
+  const name = String(row.name || '').trim();
+  const phone = normalizePhone(row.phone);
+  const expDate = String(row.expDate || '').trim();
+  const licKey = String(row.licKey || '').trim();
+  const duration = Number(row.duration || 0);
+  if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(expDate) || !licKey) return null;
+  return {
+    id: String(row.id || Date.now().toString()),
+    name,
+    phone,
+    mid,
+    duration,
+    expDate,
+    licKey,
+    createdAt: row.createdAt || new Date().toISOString()
+  };
+}
+
+function dedupeByMid(items) {
+  const map = new Map();
+  items.forEach(r => {
+    const old = map.get(r.mid);
+    if (!old) {
+      map.set(r.mid, r);
+      return;
+    }
+    if (String(r.createdAt || '') > String(old.createdAt || '')) {
+      map.set(r.mid, r);
+    }
+  });
+  return [...map.values()];
+}
+
+function loadSalesData() {
+  const primary = SafeStore.getJSON(SALES_KEY, null);
+  const backup = SafeStore.getJSON(SALES_BAK_KEY, []);
+  const source = Array.isArray(primary) ? primary : (Array.isArray(backup) ? backup : []);
+  const normalized = source.map(normalizeLicenseRecord).filter(Boolean);
+  return dedupeByMid(normalized);
+}
+
+function persistSalesData() {
+  SafeStore.setJSON(SALES_BAK_KEY, L);
+  SafeStore.setJSON(SALES_KEY, L);
+}
+
+let L = loadSalesData();
+
+function genChecksum(mac, exp) {
+  let str = mac + exp + licSecret;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36).toUpperCase();
+}
+
+function getLocalTodayString() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Tehran'
+  }).formatToParts(new Date());
+  const y = parts.find(p => p.type === 'year')?.value || '1970';
+  const m = parts.find(p => p.type === 'month')?.value || '01';
+  const d = parts.find(p => p.type === 'day')?.value || '01';
+  return `${y}-${m}-${d}`;
+}
+
+function formatPersianDate(dateInput) {
+  const d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+  return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Tehran'
+  }).format(d);
+}
+
+function normalizeMid(input) {
+  return String(input || '')
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[^A-Z0-9-]/g, '');
+}
+
+function createLicense() {
+  const name = document.getElementById('in-name').value.trim();
+  const phone = document.getElementById('in-phone').value.trim().replace(/[^0-9]/g, '');
+  const mid = normalizeMid(document.getElementById('in-mid').value);
+  const dur = parseInt(document.getElementById('in-duration').value);
+
+  if (!name || !phone || !mid) {
+    alert('لطفا تمامی فیلدهای الزامی ستاره‌دار (*) را پر کنید.');
+    return;
+  }
+  if (phone.length < 10 || phone.length > 11) {
+    alert('شماره تماس معتبر نیست.');
+    return;
+  }
+  if (!/^KS-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(mid)) {
+    alert('فرمت شناسه دستگاه معتبر نیست. مثال صحیح: KS-A9F2-C3B1');
+    return;
+  }
+
+  // Calculate Expiry Standard Date
+  const d = new Date();
+  d.setDate(d.getDate() + dur);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const expStr = `${y}-${m}-${day}`;
+
+  const checksum = genChecksum(mid, expStr);
+  const rawKey = `${mid}:${expStr}:${checksum}`;
+  const encodedKey = btoa(rawKey);
+
+  const existing = L.find(x => x.mid === mid);
+  if (existing) {
+    if (!confirm('برای این شناسه دستگاه قبلا لایسنس ثبت شده است. اطلاعات با لایسنس جدید جایگزین شود؟')) {
+      return;
+    }
+    existing.name = name;
+    existing.phone = phone;
+    existing.duration = dur;
+    existing.expDate = expStr;
+    existing.licKey = encodedKey;
+    existing.createdAt = new Date().toISOString();
+  } else {
+    const client = {
+      id: Date.now().toString(),
+      name,
+      phone,
+      mid,
+      duration: dur,
+      expDate: expStr,
+      licKey: encodedKey,
+      createdAt: new Date().toISOString()
+    };
+    L.unshift(client);
+  }
+  saveSalesData();
+  
+  document.getElementById('result-key').value = encodedKey;
+  document.getElementById('result-panel').style.display = 'block';
+
+  // clear inputs
+  document.getElementById('in-name').value = '';
+  document.getElementById('in-phone').value = '';
+  document.getElementById('in-mid').value = '';
+}
+
+function renewLicense(id) {
+  const client = L.find(x => x.id === id); if (!client) return;
+  const durStr = prompt('مدت زمان تمدید لایسنس را به تعداد روز وارد کنید:\n\nمثال‌ها:\n۷ برای دمو\n۱۸۰ برای ۶ ماه\n۳۶۵ برای ۱ سال\n۳۶۵۰ برای دائم', '365');
+  const dur = parseInt(durStr);
+  if (isNaN(dur) || dur <= 0) return alert('مدت زمان وارد شده معتبر نیست.');
+
+  const base = new Date();
+  const currentExp = new Date(client.expDate + 'T00:00:00');
+  const d = currentExp > base ? currentExp : base;
+  d.setDate(d.getDate() + dur);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const expStr = `${y}-${m}-${day}`;
+
+  const normalizedMid = normalizeMid(client.mid);
+  const checksum = genChecksum(normalizedMid, expStr);
+  const rawKey = `${normalizedMid}:${expStr}:${checksum}`;
+  const encodedKey = btoa(rawKey);
+
+  client.duration = dur;
+  client.expDate = expStr;
+  client.licKey = encodedKey;
+
+  saveSalesData();
+  alert('لایسنس مشتری تمدید شد. کد لایسنس جدید در فیلد کپی آماده است.');
+  
+  document.getElementById('result-key').value = encodedKey;
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+function deleteLicense(id) {
+  if (!confirm('آیا مطمئن هستید که می‌خواهید مشخصات این مشتری را حذف کنید؟ این عمل غیر قابل بازگشت است.')) return;
+  L = L.filter(x => x.id !== id);
+  saveSalesData();
+}
+
+async function copyTextSafe(text) {
+  const value = String(text || '');
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch (e) {}
+
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = value;
+    ta.setAttribute('readonly', 'true');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.pointerEvents = 'none';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return !!ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function copyResultKey(btn) {
+  const textarea = document.getElementById('result-key');
+  const ok = await copyTextSafe(textarea.value);
+  if (!ok) {
+    alert('کپی خودکار در این مرورگر/گوشی محدود است. لطفا کلید را دستی کپی کنید.');
+    return;
+  }
+  {
+    const oldText = btn.textContent;
+    btn.textContent = 'کپی شد! ✓';
+    setTimeout(() => {
+      btn.textContent = oldText;
+    }, 1500);
+  }
+}
+
+async function copyInlineKey(btn, key) {
+  const ok = await copyTextSafe(key);
+  if (!ok) {
+    alert('کپی خودکار در این مرورگر/گوشی محدود است. لطفا کلید را دستی کپی کنید.');
+    return;
+  }
+  {
+    const oldText = btn.textContent;
+    btn.textContent = 'کلید کپی شد! ✓';
+    setTimeout(() => {
+      btn.textContent = oldText;
+    }, 1500);
+  }
+}
+
+function saveSalesData() {
+  persistSalesData();
+  renderSales();
+  auditLicenseDb();
+}
+
+function auditLicenseDb() {
+  const todayStr = getLocalTodayString();
+  const total = L.length;
+  let invalid = 0;
+  let duplicateByMid = 0;
+  let expired = 0;
+  let badSign = 0;
+  const seen = new Set();
+
+  L.forEach(c => {
+    if (seen.has(c.mid)) duplicateByMid++;
+    seen.add(c.mid);
+    if (todayStr > c.expDate) expired++;
+    try {
+      const decoded = atob(c.licKey);
+      const parts = decoded.split(':');
+      if (parts.length !== 3) throw new Error('format');
+      const [mid, exp, sig] = parts;
+      if (normalizeMid(mid) !== c.mid || exp !== c.expDate || sig !== genChecksum(c.mid, c.expDate)) {
+        badSign++;
+      }
+    } catch (e) {
+      badSign++;
+    }
+    if (!normalizeLicenseRecord(c)) invalid++;
+  });
+
+  const health = document.getElementById('db-health');
+  if (health) {
+    health.innerHTML = `
+      کل رکوردها: <strong>${total}</strong><br>
+      فعال: <strong style="color:#4ade80">${total - expired}</strong> | منقضی: <strong style="color:#f87171">${expired}</strong><br>
+      رکورد تکراری MID: <strong style="color:var(--gold2)">${duplicateByMid}</strong> | رکورد مشکل‌دار: <strong style="color:#f87171">${invalid + badSign}</strong>
+    `;
+    if (!HAS_PERSISTENT_STORAGE) {
+      health.innerHTML += '<br><small style="color:#f87171">⚠️ ذخیره‌سازی پایدار مرورگر غیرفعال است (Private Mode/محدودیت سیستم). برای جلوگیری از از‌دست‌رفتن دیتابیس، از مرورگر عادی استفاده کنید و حتما بکاپ بگیرید.</small>';
+    }
+  }
+}
+
+function repairLicenseDb() {
+  const before = L.length;
+  const repaired = dedupeByMid(L.map(normalizeLicenseRecord).filter(Boolean));
+  L = repaired;
+  persistSalesData();
+  renderSales();
+  auditLicenseDb();
+  alert(`تعمیر دیتابیس انجام شد.\nقبل: ${before} رکورد\nبعد: ${L.length} رکورد`);
+}
+
+function purgeInvalidLicenses() {
+  if (!confirm('تمام رکوردهای نامعتبر/خراب حذف شوند؟')) return;
+  const before = L.length;
+  L = L.filter(x => normalizeLicenseRecord(x));
+  L = dedupeByMid(L);
+  persistSalesData();
+  renderSales();
+  auditLicenseDb();
+  alert(`پاکسازی انجام شد.\n${before - L.length} رکورد حذف شد.`);
+}
+
+function exportActiveLicensesCsv() {
+  const today = getLocalTodayString();
+  const rows = [['name','phone','mid','expDate','licenseKey']];
+  L.forEach(c => {
+    if (c.expDate >= today) rows.push([c.name, c.phone, c.mid, c.expDate, c.licKey]);
+  });
+  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = 'active-licenses-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+}
+
+function renderSales() {
+  const q = document.getElementById('q-search').value.toLowerCase();
+  const todayStr = getLocalTodayString();
+  
+  let list = L.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.mid.toLowerCase().includes(q));
+  
+  // Stats Calculation
+  let active = 0, expired = 0, demos = 0;
+  L.forEach(c => {
+    if (todayStr > c.expDate) expired++;
+    else {
+      active++;
+      if (c.duration <= 7) demos++;
+    }
+  });
+
+  document.getElementById('st-total').textContent = String(L.length);
+  document.getElementById('st-active').textContent = String(active);
+  document.getElementById('st-expired').textContent = String(expired);
+  document.getElementById('st-demo').textContent = String(demos);
+
+  const tbl = document.getElementById('sales-tbl');
+  if (!tbl) return;
+  if (!list.length) {
+    tbl.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--muted)">هیچ موردی یافت نشد.</td></tr>';
+    return;
+  }
+
+  tbl.innerHTML = list.map(c => {
+    const isExpired = todayStr > c.expDate;
+    let typeLabel = c.duration <= 7 ? 'دمو ۷ روزه' : c.duration <= 180 ? '۶ ماهه' : c.duration <= 365 ? '۱ ساله' : 'دائمی ده‌ساله';
+    return `
+      <tr>
+        <td><strong>${c.name}</strong></td>
+        <td><small>${c.phone}</small></td>
+        <td><code style="letter-spacing:0.5px;">${c.mid}</code></td>
+        <td>${typeLabel}</td>
+        <td>${formatPersianDate(c.expDate)}</td>
+        <td>
+          <span class="bd ${isExpired ? 'br' : 'bgg'}">${isExpired ? 'منقضی شده' : 'فعال'}</span>
+        </td>
+        <td style="white-space:nowrap;">
+          <button class="btn bgreen bxs" onclick="copyInlineKey(this, '${c.licKey}')">📋 کپی کلید</button>
+          <button class="btn bp bxs" onclick="renewLicense('${c.id}')">🔄 تمدید</button>
+          <button class="btn bred bxs" onclick="deleteLicense('${c.id}')">🗑 حذف</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ═══════════ BACKUP UTILITIES FOR CRM SYSTEM ═══════════
+function saveSalesBackup() {
+  const data = {
+    schema: "LicCRMBackup",
+    exportedAt: new Date().toISOString(),
+    sales: L
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'license-crm-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function loadSalesBackup(event) {
+  const file = event.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data || !Array.isArray(data.sales)) {
+        throw new Error('ساختار معتبر نیست.');
+      }
+      if (!confirm(`پشتیبان حاوی ${data.sales.length} فیلد ثبتی است. جایگزین دیتابیس فعلی شود؟`)) return;
+      L = dedupeByMid(data.sales.map(normalizeLicenseRecord).filter(Boolean));
+      saveSalesData();
+    } catch(e) {
+      alert('خطا در بارگذاری فایل پشتیبان.');
+    }
+  };
+  r.readAsText(file);
+  event.target.value = '';
+}
+
+// init
+renderSales();
+auditLicenseDb();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>

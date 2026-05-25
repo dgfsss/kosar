@@ -1,0 +1,13 @@
+{
+  "name": "Kosar Insurance Suite",
+  "short_name": "Kosar",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#09111c",
+  "theme_color": "#0b2d52",
+  "lang": "fa",
+  "dir": "rtl",
+  "description": "سامانه مدیریت اقساط و پنل مدیریت لایسنس با پشتیبانی آفلاین",
+  "icons": []
+}

@@ -1,9 +1,12 @@
-const CACHE_VERSION = 'kosar-pwa-v1.3.0';
+const CACHE_VERSION = 'kosar-pwa-v1.4.0';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './customer.html',
   './ai_studio_code (5).html',
   './license-registry.json',
+  './icons-192.svg',
+  './icons-512.svg',
   './manifest.webmanifest',
   './service-worker.js'
 ];
@@ -61,7 +64,7 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => {
           const cachedPage = await caches.match(req);
           if (cachedPage) return cachedPage;
-          const fallback = await caches.match('./index.html');
+          const fallback = await caches.match('./customer.html');
           return fallback || Response.error();
         })
     );
@@ -99,7 +102,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy));
           return res;
         })
-        .catch(() => caches.match('./index.html'));
+        .catch(() => caches.match('./customer.html'));
     })
   );
 });

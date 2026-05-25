@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-25T09:37:35.213Z",
+  "generatedAt": "2026-05-25T09:39:41.159Z",
   "generatedAtFa": "۱۴۰۵/۰۳/۰۴",
   "timezone": "Asia/Tehran",
   "today": "2026-05-25",
@@ -9,7 +9,7 @@
     {
       "mid": "KS-NBUR-WVL9",
       "expDate": "2027-05-25",
-      "status": "revoked",
+      "status": "active",
       "licenseHash": "7WH3LZ"
     }
   ]

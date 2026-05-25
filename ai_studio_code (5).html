@@ -1086,9 +1086,10 @@ const ONLINE_LICENSE_URLS = [
   './license-registry.json',
   'https://dgfsss.github.io/kosar/license-registry.json'
 ];
-const ONLINE_SYNC_MIN_INTERVAL = 30 * 1000;
+const ONLINE_SYNC_MIN_INTERVAL = 10 * 1000;
 const ONLINE_NOT_FOUND_GRACE_MS = 10 * 60 * 1000;
 const ONLINE_RETRY_ON_NOT_FOUND_MS = 5000;
+const ONLINE_FORCE_SYNC_INTERVAL_MS = 10000;
 let onlineLicenseCheckInFlight = false;
 let onlineLicenseLastAttemptAt = 0;
 let onlineLicenseRetryTimer = 0;
@@ -3096,21 +3097,21 @@ updateSettingsLicensePanel();
 runBackupHealthCheck(false);
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) checkLic();
+  if (!document.hidden) checkLic(true);
 });
 
 window.addEventListener('pageshow', () => {
-  checkLic();
+  checkLic(true);
 });
 
 window.addEventListener('storage', (e) => {
   if (e.key === 'kt3_lic' || e.key === 'kt3_mid' || e.key === 'kt3_last_opened' || e.key === 'kt3_online_lic_state') {
-    checkLic();
+    checkLic(true);
   }
 });
 
 window.addEventListener('online', () => {
-  checkLic();
+  checkLic(true);
   updateSettingsLicensePanel();
 });
 
@@ -3119,8 +3120,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 setInterval(() => {
-  if (licenseValidated) checkLic();
-}, 15000);
+  if (licenseValidated) checkLic(true);
+}, ONLINE_FORCE_SYNC_INTERVAL_MS);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

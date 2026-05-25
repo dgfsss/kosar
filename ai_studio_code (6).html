@@ -328,6 +328,7 @@ tr:hover td { background: rgba(59,130,246,0.03); }
       </div>
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
         <button class="btn bp bxs" onclick="savePublishSettingsFromUI()">💾 ذخیره تنظیمات انتشار</button>
+        <button class="btn bgreen bxs" onclick="runSmartAutoSyncOneClick()">🎯 همگام‌سازی هوشمند تک‌کلیکی</button>
         <button class="btn bgreen bxs" onclick="publishOnlineRegistryToGitHub('manual')">🚀 انتشار فوری رجیستری آنلاین</button>
         <button class="btn bgreen bxs" onclick="publishAndCheckOnlineNow()">⚡ انتشار + چک فوری آنلاین</button>
         <button class="btn bp bxs" onclick="updateCheckAndFullTestOnline()">🧩 آپدیت + چک کلی + تست کلی</button>
@@ -558,6 +559,36 @@ function savePublishSettingsFromUI() {
   }
 
   setPublishStatus('تنظیمات انتشار ذخیره شد. در صورت فعال بودن حالت خودکار، پس از تغییرات لایسنس منتشر می شود.', 'ok');
+}
+
+async function runSmartAutoSyncOneClick() {
+  const settings = collectPublishSettingsFromUI();
+  if (!settings.owner || !settings.repo || !settings.branch || !settings.path) {
+    setPublishStatus('برای همگام‌سازی هوشمند، Owner/Repo/Branch/Path را کامل کنید.', 'err');
+    return;
+  }
+
+  settings.autoPublish = true;
+  setPublishSettings(settings);
+
+  const autoEl = document.getElementById('pub-auto');
+  if (autoEl) autoEl.checked = true;
+
+  const tokenInput = document.getElementById('pub-token');
+  const inlineToken = String(tokenInput?.value || '').trim();
+  if (inlineToken) {
+    setGitHubTokenToSession(inlineToken);
+    tokenInput.value = '';
+  }
+
+  if (!getGitHubTokenFromSession()) {
+    setPublishStatus('برای تک‌کلیک هوشمند باید GitHub Token را وارد کنید.', 'warn');
+    setOnlineCheckStatus('Token در Session ثبت نشده است. یک‌بار Token را وارد و دوباره تک‌کلیک را بزنید.', 'warn');
+    return;
+  }
+
+  setPublishStatus('همگام‌سازی خودکار فعال شد. در حال اجرای همگام‌سازی کامل...', 'ok');
+  await updateCheckAndFullTestOnline();
 }
 
 function getApiPath(path) {

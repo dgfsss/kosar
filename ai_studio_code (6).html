@@ -293,6 +293,45 @@ tr:hover td { background: rgba(59,130,246,0.03); }
       <button class="btn bp bxs" onclick="exportOnlineRegistryJson()">🌐 خروجی رجیستری آنلاین</button>
       <button class="btn bred bxs" onclick="purgeInvalidLicenses()">🧹 حذف رکوردهای نامعتبر</button>
     </div>
+
+    <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);">
+      <div style="font-size:11px; color:var(--muted); margin-bottom:8px; line-height:1.9;">
+        انتشار خودکار رجیستری آنلاین روی GitHub: بعد از ساخت/تمدید/مسدودسازی، فایل رجیستری به صورت خودکار بروزرسانی می شود.
+      </div>
+      <div class="fg">
+        <div class="fgrp">
+          <label>مالک ریپو</label>
+          <input id="pub-owner" type="text" placeholder="dgfsss" style="direction:ltr;">
+        </div>
+        <div class="fgrp">
+          <label>نام ریپو</label>
+          <input id="pub-repo" type="text" placeholder="kosar" style="direction:ltr;">
+        </div>
+        <div class="fgrp">
+          <label>Branch</label>
+          <input id="pub-branch" type="text" placeholder="main" style="direction:ltr;">
+        </div>
+        <div class="fgrp">
+          <label>مسیر فایل رجیستری</label>
+          <input id="pub-path" type="text" placeholder="license-registry.json" style="direction:ltr;">
+        </div>
+        <div class="fgrp" style="grid-column:1 / -1;">
+          <label>GitHub Token (فقط در Session مرورگر نگه داری می شود)</label>
+          <input id="pub-token" type="password" placeholder="ghp_..." autocomplete="off" style="direction:ltr;">
+        </div>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text); cursor:pointer;">
+          <input id="pub-auto" type="checkbox">
+          انتشار خودکار بعد از هر تغییر لایسنس
+        </label>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+        <button class="btn bp bxs" onclick="savePublishSettingsFromUI()">💾 ذخیره تنظیمات انتشار</button>
+        <button class="btn bgreen bxs" onclick="publishOnlineRegistryToGitHub('manual')">🚀 انتشار فوری رجیستری آنلاین</button>
+      </div>
+      <div id="pub-status" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.9;">وضعیت انتشار آنلاین: تنظیم نشده</div>
+    </div>
   </div>
 
 </div>
@@ -304,6 +343,10 @@ const MANAGER_ACCESS_KEY = 'ks_manager_unlock_v1';
 const MANAGER_PASSWORD_SHA256 = '18870d0dc74bbc74c0d54c451d0cba8a622ee686708b85a3814f70b256a6b2c4';
 const SALES_KEY = 'kt3_lic_sales';
 const SALES_BAK_KEY = 'kt3_lic_sales_bak';
+const PUBLISH_SETTINGS_KEY = 'kt3_publish_settings';
+const GITHUB_TOKEN_SESSION_KEY = 'kt3_github_token_session';
+const AUTO_PUBLISH_DEBOUNCE_MS = 1800;
+let autoPublishTimer = null;
 const memStore = {};
 const HAS_PERSISTENT_STORAGE = (() => {
   try {
@@ -351,6 +394,223 @@ const SafeStore = {
 
 function normalizePhone(input) {
   return String(input || '').replace(/[^0-9]/g, '');
+}
+
+function getDefaultPublishSettings() {
+  return {
+    owner: 'dgfsss',
+    repo: 'kosar',
+    branch: 'main',
+    path: 'license-registry.json',
+    autoPublish: false
+  };
+}
+
+function getPublishSettings() {
+  const defaults = getDefaultPublishSettings();
+  const raw = SafeStore.getJSON(PUBLISH_SETTINGS_KEY, defaults);
+  return {
+    owner: String(raw.owner || defaults.owner).trim(),
+    repo: String(raw.repo || defaults.repo).trim(),
+    branch: String(raw.branch || defaults.branch).trim(),
+    path: String(raw.path || defaults.path).trim(),
+    autoPublish: !!raw.autoPublish
+  };
+}
+
+function setPublishSettings(settings) {
+  SafeStore.setJSON(PUBLISH_SETTINGS_KEY, {
+    owner: String(settings.owner || '').trim(),
+    repo: String(settings.repo || '').trim(),
+    branch: String(settings.branch || 'main').trim(),
+    path: String(settings.path || 'license-registry.json').trim(),
+    autoPublish: !!settings.autoPublish
+  });
+}
+
+function setPublishStatus(msg, kind) {
+  const el = document.getElementById('pub-status');
+  if (!el) return;
+  const map = {
+    ok: '#4ade80',
+    err: '#f87171',
+    warn: '#fdba74',
+    info: 'var(--muted)'
+  };
+  el.style.color = map[kind] || map.info;
+  el.textContent = msg || '';
+}
+
+function loadPublishSettingsUI() {
+  const s = getPublishSettings();
+  const ownerEl = document.getElementById('pub-owner');
+  const repoEl = document.getElementById('pub-repo');
+  const branchEl = document.getElementById('pub-branch');
+  const pathEl = document.getElementById('pub-path');
+  const autoEl = document.getElementById('pub-auto');
+  if (ownerEl) ownerEl.value = s.owner;
+  if (repoEl) repoEl.value = s.repo;
+  if (branchEl) branchEl.value = s.branch;
+  if (pathEl) pathEl.value = s.path;
+  if (autoEl) autoEl.checked = !!s.autoPublish;
+}
+
+function getGitHubTokenFromSession() {
+  try {
+    return sessionStorage.getItem(GITHUB_TOKEN_SESSION_KEY) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function setGitHubTokenToSession(token) {
+  try {
+    if (token) sessionStorage.setItem(GITHUB_TOKEN_SESSION_KEY, token);
+  } catch (e) {}
+}
+
+function encodeBase64Utf8(text) {
+  const utf8 = unescape(encodeURIComponent(String(text || '')));
+  return btoa(utf8);
+}
+
+function collectPublishSettingsFromUI() {
+  const owner = document.getElementById('pub-owner')?.value || '';
+  const repo = document.getElementById('pub-repo')?.value || '';
+  const branch = document.getElementById('pub-branch')?.value || 'main';
+  const path = document.getElementById('pub-path')?.value || 'license-registry.json';
+  const autoPublish = !!document.getElementById('pub-auto')?.checked;
+  return {
+    owner: String(owner).trim(),
+    repo: String(repo).trim(),
+    branch: String(branch).trim() || 'main',
+    path: String(path).trim() || 'license-registry.json',
+    autoPublish
+  };
+}
+
+function savePublishSettingsFromUI() {
+  const settings = collectPublishSettingsFromUI();
+  if (!settings.owner || !settings.repo || !settings.branch || !settings.path) {
+    setPublishStatus('اطلاعات ریپو کامل نیست. Owner/Repo/Branch/Path را کامل کنید.', 'err');
+    return;
+  }
+  setPublishSettings(settings);
+
+  const tokenInput = document.getElementById('pub-token');
+  const token = String(tokenInput?.value || '').trim();
+  if (token) {
+    setGitHubTokenToSession(token);
+    tokenInput.value = '';
+  }
+
+  setPublishStatus('تنظیمات انتشار ذخیره شد. در صورت فعال بودن حالت خودکار، پس از تغییرات لایسنس منتشر می شود.', 'ok');
+}
+
+function getApiPath(path) {
+  return String(path || 'license-registry.json')
+    .split('/')
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join('/');
+}
+
+async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
+  const settings = collectPublishSettingsFromUI();
+  setPublishSettings(settings);
+
+  if (!settings.owner || !settings.repo || !settings.branch || !settings.path) {
+    setPublishStatus('اطلاعات ریپو ناقص است.', 'err');
+    return false;
+  }
+
+  const tokenInput = document.getElementById('pub-token');
+  const inlineToken = String(tokenInput?.value || '').trim();
+  const token = inlineToken || getGitHubTokenFromSession();
+  if (!token) {
+    setPublishStatus('برای انتشار خودکار باید GitHub Token را وارد کنید.', 'warn');
+    return false;
+  }
+  if (inlineToken) {
+    setGitHubTokenToSession(inlineToken);
+    if (tokenInput) tokenInput.value = '';
+  }
+
+  if (!navigator.onLine) {
+    setPublishStatus('اینترنت قطع است؛ انتشار آنلاین انجام نشد.', 'warn');
+    return false;
+  }
+
+  const owner = encodeURIComponent(settings.owner);
+  const repo = encodeURIComponent(settings.repo);
+  const apiPath = getApiPath(settings.path);
+  const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${apiPath}`;
+  const headers = {
+    'Accept': 'application/vnd.github+json',
+    'Authorization': `Bearer ${token}`,
+    'X-GitHub-Api-Version': '2022-11-28',
+    'Content-Type': 'application/json'
+  };
+
+  setPublishStatus('در حال انتشار رجیستری آنلاین...', 'info');
+
+  try {
+    let sha = null;
+    const getRes = await fetch(`${baseUrl}?ref=${encodeURIComponent(settings.branch)}`, { headers });
+    if (getRes.ok) {
+      const current = await getRes.json();
+      sha = current?.sha || null;
+    } else if (getRes.status !== 404) {
+      throw new Error(`GitHub GET failed (${getRes.status})`);
+    }
+
+    const registryJson = JSON.stringify(buildOnlineRegistry(), null, 2);
+    const body = {
+      message: `sync online license registry (${new Date().toISOString()})`,
+      content: encodeBase64Utf8(registryJson),
+      branch: settings.branch
+    };
+    if (sha) body.sha = sha;
+
+    const putRes = await fetch(baseUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (!putRes.ok) {
+      const errText = await putRes.text();
+      throw new Error(`GitHub PUT failed (${putRes.status}) ${errText.slice(0, 180)}`);
+    }
+
+    const nowFa = formatPersianDate(new Date());
+    setPublishStatus(`انتشار آنلاین موفق بود ✅ (${nowFa})`, 'ok');
+    if (triggerMode === 'manual') {
+      alert('رجیستری آنلاین با موفقیت روی GitHub بروزرسانی شد.');
+    }
+    return true;
+  } catch (e) {
+    setPublishStatus(`انتشار آنلاین ناموفق: ${String(e.message || e)}`, 'err');
+    if (triggerMode === 'manual') {
+      alert('انتشار آنلاین انجام نشد. جزئیات خطا در وضعیت انتشار نمایش داده شد.');
+    }
+    return false;
+  }
+}
+
+function scheduleAutoOnlinePublish() {
+  const settings = getPublishSettings();
+  if (!settings.autoPublish) return;
+  if (!getGitHubTokenFromSession()) {
+    setPublishStatus('انتشار خودکار فعال است اما Token ثبت نشده؛ یک بار Token را وارد و ذخیره کنید.', 'warn');
+    return;
+  }
+  if (autoPublishTimer) {
+    clearTimeout(autoPublishTimer);
+  }
+  autoPublishTimer = setTimeout(() => {
+    publishOnlineRegistryToGitHub('auto');
+  }, AUTO_PUBLISH_DEBOUNCE_MS);
 }
 
 async function hashSha256Hex(text) {
@@ -700,6 +960,7 @@ function saveSalesData() {
   persistSalesData();
   renderSales();
   auditLicenseDb();
+  scheduleAutoOnlinePublish();
 }
 
 function auditLicenseDb() {
@@ -897,6 +1158,7 @@ function loadSalesBackup(event) {
 
 // init
 initManagerAccess();
+loadPublishSettingsUI();
 renderSales();
 auditLicenseDb();
 

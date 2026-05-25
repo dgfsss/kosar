@@ -379,6 +379,7 @@ const GITHUB_TOKEN_SESSION_KEY = 'kt3_github_token_session';
 const GITHUB_TOKEN_PERSIST_KEY = 'kt3_github_token_persist';
 const AUTO_PUBLISH_DEBOUNCE_MS = 1800;
 let autoPublishTimer = null;
+let publishRegistryBusy = false;
 const memStore = {};
 const HAS_PERSISTENT_STORAGE = (() => {
   try {
@@ -739,6 +740,12 @@ async function fetchRegistryCandidate(url, token) {
 }
 
 async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', successToast = 'رجیستری آنلاین با موفقیت روی GitHub بروزرسانی شد.') {
+  if (publishRegistryBusy) {
+    setPublishStatus('یک انتشار دیگر در حال انجام است؛ چند ثانیه صبر کنید.', 'warn');
+    return false;
+  }
+  publishRegistryBusy = true;
+
   const settings = collectPublishSettingsFromUI();
   setPublishSettings(settings);
 
@@ -808,13 +815,13 @@ async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', su
       });
     };
 
-    let sha = await readCurrentSha();
-    let putRes = await putWithSha(sha);
-
-    if (putRes.status === 409) {
-      // Resolve concurrent update conflicts by re-reading latest SHA and retrying once.
-      sha = await readCurrentSha();
+    let putRes = null;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      const sha = await readCurrentSha();
       putRes = await putWithSha(sha);
+      if (putRes.status !== 409) break;
+      // Allow concurrent writers to finish, then retry with fresh SHA.
+      await new Promise(resolve => setTimeout(resolve, 220 * attempt));
     }
 
     if (!putRes.ok) {
@@ -834,6 +841,8 @@ async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', su
       alert('انتشار آنلاین انجام نشد. جزئیات خطا در وضعیت انتشار نمایش داده شد.');
     }
     return false;
+  } finally {
+    publishRegistryBusy = false;
   }
 }
 

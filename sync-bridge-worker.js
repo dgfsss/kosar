@@ -79,23 +79,18 @@ export default {
       });
     };
 
-    let sha;
-    try {
-      sha = await readCurrentSha();
-    } catch (e) {
-      return new Response(String(e.message || e), { status: 502 });
-    }
-
-    let putRes = await putWithSha(sha);
-
-    if (putRes.status === 409) {
-      // Retry once with refreshed SHA to resolve concurrent write conflict.
+    let putRes = null;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      let sha;
       try {
         sha = await readCurrentSha();
       } catch (e) {
         return new Response(String(e.message || e), { status: 502 });
       }
+
       putRes = await putWithSha(sha);
+      if (putRes.status !== 409) break;
+      await new Promise(resolve => setTimeout(resolve, 220 * attempt));
     }
 
     if (!putRes.ok) {

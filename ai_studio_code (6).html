@@ -329,6 +329,7 @@ tr:hover td { background: rgba(59,130,246,0.03); }
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
         <button class="btn bp bxs" onclick="savePublishSettingsFromUI()">💾 ذخیره تنظیمات انتشار</button>
         <button class="btn bgreen bxs" onclick="publishOnlineRegistryToGitHub('manual')">🚀 انتشار فوری رجیستری آنلاین</button>
+        <button class="btn bgreen bxs" onclick="publishAndCheckOnlineNow()">⚡ انتشار + چک فوری آنلاین</button>
       </div>
       <div id="pub-status" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.9;">وضعیت انتشار آنلاین: تنظیم نشده</div>
 
@@ -822,6 +823,16 @@ async function checkOnlineRegistryLive() {
     `نیاز به همگام‌سازی مشاهده شد ⚠️<br><small>Missing MID: ${missingMids.length} | Hash mismatch: ${hashMismatch.length} | Status mismatch: ${statusMismatch.length}</small><br><small>نمونه MIDهای مشکل‌دار: ${escapeHtml(missingMids.concat(hashMismatch, statusMismatch).slice(0, 5).join(' , ') || '-')}</small><br><small>منبع: ${source}</small>`,
     'warn'
   );
+}
+
+async function publishAndCheckOnlineNow() {
+  setOnlineCheckStatus('در حال انتشار و چک فوری آنلاین...', 'info');
+  const published = await publishOnlineRegistryToGitHub('auto');
+  if (!published) {
+    setOnlineCheckStatus('انتشار انجام نشد؛ ابتدا خطای انتشار را رفع کنید و دوباره بزنید.', 'err');
+    return;
+  }
+  await checkOnlineRegistryLive();
 }
 
 function scheduleAutoOnlinePublish() {

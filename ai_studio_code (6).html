@@ -330,6 +330,7 @@ tr:hover td { background: rgba(59,130,246,0.03); }
         <button class="btn bp bxs" onclick="savePublishSettingsFromUI()">💾 ذخیره تنظیمات انتشار</button>
         <button class="btn bgreen bxs" onclick="publishOnlineRegistryToGitHub('manual')">🚀 انتشار فوری رجیستری آنلاین</button>
         <button class="btn bgreen bxs" onclick="publishAndCheckOnlineNow()">⚡ انتشار + چک فوری آنلاین</button>
+        <button class="btn bp bxs" onclick="updateCheckAndFullTestOnline()">🧩 آپدیت + چک کلی + تست کلی</button>
       </div>
       <div id="pub-status" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.9;">وضعیت انتشار آنلاین: تنظیم نشده</div>
 
@@ -740,12 +741,12 @@ async function checkOnlineRegistryLive() {
 
   if (!settings.owner || !settings.repo || !settings.branch || !settings.path) {
     setOnlineCheckStatus('برای چک آنلاین ابتدا Owner/Repo/Branch/Path را کامل کنید.', 'err');
-    return;
+    return { ok: false, reason: 'INVALID_SETTINGS' };
   }
 
   if (!navigator.onLine) {
     setOnlineCheckStatus('اینترنت قطع است. چک آنلاین امکان‌پذیر نیست.', 'warn');
-    return;
+    return { ok: false, reason: 'OFFLINE' };
   }
 
   const tokenInput = document.getElementById('pub-token');
@@ -781,7 +782,7 @@ async function checkOnlineRegistryLive() {
       `چک آنلاین ناموفق بود. هیچ منبع معتبری پاسخ نداد.<br><small>${escapeHtml(errors.slice(0, 3).join(' | ') || 'خطای نامشخص')}</small>`,
       'err'
     );
-    return;
+    return { ok: false, reason: 'FETCH_FAILED', errors };
   }
 
   const localRegistry = buildOnlineRegistry();
@@ -816,13 +817,31 @@ async function checkOnlineRegistryLive() {
       `سازگاری کامل با نسخه مشتری ✅<br><small>منبع: ${source}</small><br><small>تعداد آنلاین: ${totalOnline} | زمان تولید رجیستری: ${onlineGenerated}</small>`,
       'ok'
     );
-    return;
+    return {
+      ok: true,
+      onlineRegistry,
+      onlineUrl,
+      missingMids,
+      hashMismatch,
+      statusMismatch,
+      errors
+    };
   }
 
   setOnlineCheckStatus(
     `نیاز به همگام‌سازی مشاهده شد ⚠️<br><small>Missing MID: ${missingMids.length} | Hash mismatch: ${hashMismatch.length} | Status mismatch: ${statusMismatch.length}</small><br><small>نمونه MIDهای مشکل‌دار: ${escapeHtml(missingMids.concat(hashMismatch, statusMismatch).slice(0, 5).join(' , ') || '-')}</small><br><small>منبع: ${source}</small>`,
     'warn'
   );
+  return {
+    ok: false,
+    reason: 'SYNC_MISMATCH',
+    onlineRegistry,
+    onlineUrl,
+    missingMids,
+    hashMismatch,
+    statusMismatch,
+    errors
+  };
 }
 
 async function publishAndCheckOnlineNow() {
@@ -833,6 +852,100 @@ async function publishAndCheckOnlineNow() {
     return;
   }
   await checkOnlineRegistryLive();
+}
+
+async function updateCheckAndFullTestOnline() {
+  setOnlineCheckStatus('در حال اجرای آپدیت + چک کلی + تست کلی...', 'info');
+
+  const published = await publishOnlineRegistryToGitHub('auto');
+  if (!published) {
+    setOnlineCheckStatus('آپدیت آنلاین انجام نشد؛ ابتدا خطای انتشار را رفع کنید.', 'err');
+    return;
+  }
+
+  const checkResult = await checkOnlineRegistryLive();
+  if (!checkResult || !checkResult.onlineRegistry) {
+    return;
+  }
+
+  const onlineRegistry = checkResult.onlineRegistry;
+  const onlineLicenses = Array.isArray(onlineRegistry.licenses) ? onlineRegistry.licenses : [];
+  const today = getLocalTodayString();
+
+  const midRegex = /^KS-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  const duplicateMidSet = new Set();
+  const seenMidSet = new Set();
+  let invalidMidCount = 0;
+  let invalidDateCount = 0;
+  let invalidStatusCount = 0;
+  let expiredActiveCount = 0;
+
+  for (const rec of onlineLicenses) {
+    const mid = String(rec?.mid || '').trim();
+    const expDate = String(rec?.expDate || '').trim();
+    const status = String(rec?.status || '').trim();
+
+    if (!midRegex.test(mid)) invalidMidCount++;
+    if (!dateRegex.test(expDate)) invalidDateCount++;
+    if (status !== 'active' && status !== 'revoked') invalidStatusCount++;
+    if (dateRegex.test(expDate) && expDate < today && status === 'active') expiredActiveCount++;
+
+    if (mid) {
+      if (seenMidSet.has(mid)) duplicateMidSet.add(mid);
+      seenMidSet.add(mid);
+    }
+  }
+
+  const schemaOk = Number(onlineRegistry.schemaVersion) === Number(ONLINE_REGISTRY_SCHEMA);
+  const totalField = Number(onlineRegistry.total || 0);
+  const totalMatch = totalField === onlineLicenses.length;
+
+  const hardFail =
+    !schemaOk ||
+    !totalMatch ||
+    invalidMidCount > 0 ||
+    invalidDateCount > 0 ||
+    invalidStatusCount > 0 ||
+    duplicateMidSet.size > 0 ||
+    !!(checkResult.missingMids?.length) ||
+    !!(checkResult.hashMismatch?.length) ||
+    !!(checkResult.statusMismatch?.length);
+
+  const summary = [
+    `Schema OK: ${schemaOk ? '✅' : '❌'}`,
+    `Total Match: ${totalMatch ? '✅' : '❌'} (${totalField}/${onlineLicenses.length})`,
+    `Duplicate MID: ${duplicateMidSet.size}`,
+    `Invalid MID format: ${invalidMidCount}`,
+    `Invalid ExpDate: ${invalidDateCount}`,
+    `Invalid Status: ${invalidStatusCount}`,
+    `Expired but Active: ${expiredActiveCount}`,
+    `Sync Missing MID: ${(checkResult.missingMids || []).length}`,
+    `Sync Hash mismatch: ${(checkResult.hashMismatch || []).length}`,
+    `Sync Status mismatch: ${(checkResult.statusMismatch || []).length}`
+  ];
+
+  const sampleErrors = [
+    ...(checkResult.missingMids || []).slice(0, 3).map(x => `missing:${x}`),
+    ...(checkResult.hashMismatch || []).slice(0, 3).map(x => `hash:${x}`),
+    ...(checkResult.statusMismatch || []).slice(0, 3).map(x => `status:${x}`),
+    ...Array.from(duplicateMidSet).slice(0, 3).map(x => `dup:${x}`)
+  ];
+
+  if (hardFail) {
+    setOnlineCheckStatus(
+      `تست کلی: نیاز به اصلاح ⚠️<br><small>${escapeHtml(summary.join(' | '))}</small><br><small>نمونه خطا: ${escapeHtml(sampleErrors.join(' , ') || '-')}</small>`,
+      'warn'
+    );
+    return;
+  }
+
+  const warnOnly = expiredActiveCount > 0;
+  setOnlineCheckStatus(
+    `آپدیت + چک کلی + تست کلی موفق ✅<br><small>${escapeHtml(summary.join(' | '))}</small>${warnOnly ? '<br><small>هشدار: برخی رکوردها منقضی هستند ولی هنوز active ثبت شده‌اند.</small>' : ''}`,
+    warnOnly ? 'warn' : 'ok'
+  );
 }
 
 function scheduleAutoOnlinePublish() {

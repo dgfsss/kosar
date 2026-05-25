@@ -331,6 +331,19 @@ tr:hover td { background: rgba(59,130,246,0.03); }
         <button class="btn bgreen bxs" onclick="publishOnlineRegistryToGitHub('manual')">🚀 انتشار فوری رجیستری آنلاین</button>
       </div>
       <div id="pub-status" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.9;">وضعیت انتشار آنلاین: تنظیم نشده</div>
+
+      <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);">
+        <div style="font-size:12px; color:var(--text); font-weight:700; margin-bottom:8px;">چک/آپلود آنلاین برای سازگاری با نسخه مشتری</div>
+        <div style="font-size:11px; color:var(--muted); margin-bottom:8px; line-height:1.9;">
+          بررسی زنده رجیستری آنلاین و مقایسه با دیتابیس فعلی مدیریت، به‌همراه امکان آپلود مستقیم فایل JSON رجیستری روی GitHub.
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn bp bxs" onclick="checkOnlineRegistryLive()">🧪 چک زنده سازگاری آنلاین</button>
+          <input id="upload-registry-file" type="file" accept="application/json,.json" style="max-width:260px;">
+          <button class="btn bgreen bxs" onclick="uploadRegistryFileToGitHub()">⬆️ آپلود فایل رجیستری به GitHub</button>
+        </div>
+        <div id="online-check-status" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.9;">وضعیت چک لحظه‌ای: هنوز اجرا نشده</div>
+      </div>
     </div>
   </div>
 
@@ -441,6 +454,19 @@ function setPublishStatus(msg, kind) {
   el.textContent = msg || '';
 }
 
+function setOnlineCheckStatus(msg, kind) {
+  const el = document.getElementById('online-check-status');
+  if (!el) return;
+  const map = {
+    ok: '#4ade80',
+    err: '#f87171',
+    warn: '#fdba74',
+    info: 'var(--muted)'
+  };
+  el.style.color = map[kind] || map.info;
+  el.innerHTML = msg || '';
+}
+
 function loadPublishSettingsUI() {
   const s = getPublishSettings();
   const ownerEl = document.getElementById('pub-owner');
@@ -472,6 +498,31 @@ function setGitHubTokenToSession(token) {
 function encodeBase64Utf8(text) {
   const utf8 = unescape(encodeURIComponent(String(text || '')));
   return btoa(utf8);
+}
+
+function decodeBase64Utf8(text) {
+  try {
+    return decodeURIComponent(escape(atob(String(text || ''))));
+  } catch (e) {
+    return atob(String(text || ''));
+  }
+}
+
+function extractRegistryPayload(raw) {
+  if (!raw) return null;
+  if (Array.isArray(raw?.licenses)) return raw;
+  if (raw.payload && Array.isArray(raw.payload.licenses)) return raw.payload;
+  if (raw.registry && Array.isArray(raw.registry.licenses)) return raw.registry;
+  if (typeof raw.content === 'string') {
+    try {
+      const decoded = raw.encoding === 'base64' ? decodeBase64Utf8(raw.content) : raw.content;
+      const parsed = JSON.parse(decoded);
+      if (Array.isArray(parsed?.licenses)) return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
 }
 
 function collectPublishSettingsFromUI() {
@@ -515,7 +566,57 @@ function getApiPath(path) {
     .join('/');
 }
 
-async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getOnlineRegistryUrls(settings) {
+  const owner = encodeURIComponent(settings.owner || '');
+  const repo = encodeURIComponent(settings.repo || '');
+  const branch = encodeURIComponent(settings.branch || 'main');
+  const apiPath = getApiPath(settings.path || 'license-registry.json');
+  const cleanPath = apiPath || 'license-registry.json';
+  return [
+    `https://api.github.com/repos/${owner}/${repo}/contents/${cleanPath}?ref=${branch}`,
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${cleanPath}`,
+    `https://${owner}.github.io/${repo}/${cleanPath}`,
+    `./${cleanPath}`
+  ];
+}
+
+async function fetchRegistryCandidate(url, token) {
+  const headers = { 'Accept': 'application/json, application/vnd.github+json, text/plain' };
+  if (token && /api\.github\.com/i.test(url)) {
+    headers['Authorization'] = `Bearer ${token}`;
+    headers['X-GitHub-Api-Version'] = '2022-11-28';
+  }
+
+  const res = await fetch(url, { headers, cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  let raw;
+  try {
+    raw = await res.json();
+  } catch (e) {
+    const text = await res.text();
+    raw = JSON.parse(text);
+  }
+
+  const payload = extractRegistryPayload(raw);
+  if (!payload) {
+    throw new Error('ساختار رجیستری معتبر نیست');
+  }
+  return payload;
+}
+
+async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', successToast = 'رجیستری آنلاین با موفقیت روی GitHub بروزرسانی شد.') {
   const settings = collectPublishSettingsFromUI();
   setPublishSettings(settings);
 
@@ -528,7 +629,7 @@ async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
   const inlineToken = String(tokenInput?.value || '').trim();
   const token = inlineToken || getGitHubTokenFromSession();
   if (!token) {
-    setPublishStatus('برای انتشار خودکار باید GitHub Token را وارد کنید.', 'warn');
+    setPublishStatus('برای انتشار آنلاین باید GitHub Token را وارد کنید.', 'warn');
     return false;
   }
   if (inlineToken) {
@@ -564,10 +665,9 @@ async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
       throw new Error(`GitHub GET failed (${getRes.status})`);
     }
 
-    const registryJson = JSON.stringify(buildOnlineRegistry(), null, 2);
     const body = {
       message: `sync online license registry (${new Date().toISOString()})`,
-      content: encodeBase64Utf8(registryJson),
+      content: encodeBase64Utf8(String(registryJson || '')),
       branch: settings.branch
     };
     if (sha) body.sha = sha;
@@ -586,7 +686,7 @@ async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
     const nowFa = formatPersianDate(new Date());
     setPublishStatus(`انتشار آنلاین موفق بود ✅ (${nowFa})`, 'ok');
     if (triggerMode === 'manual') {
-      alert('رجیستری آنلاین با موفقیت روی GitHub بروزرسانی شد.');
+      alert(successToast);
     }
     return true;
   } catch (e) {
@@ -596,6 +696,132 @@ async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
     }
     return false;
   }
+}
+
+async function publishOnlineRegistryToGitHub(triggerMode = 'manual') {
+  const registryJson = JSON.stringify(buildOnlineRegistry(), null, 2);
+  return pushRegistryJsonToGitHub(registryJson, triggerMode, 'رجیستری آنلاین با موفقیت روی GitHub بروزرسانی شد.');
+}
+
+async function uploadRegistryFileToGitHub() {
+  const input = document.getElementById('upload-registry-file');
+  const file = input?.files?.[0];
+  if (!file) {
+    setOnlineCheckStatus('ابتدا فایل JSON رجیستری را انتخاب کنید.', 'warn');
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const payload = extractRegistryPayload(parsed) || parsed;
+    if (!payload || !Array.isArray(payload.licenses)) {
+      throw new Error('فایل انتخابی رجیستری معتبر نیست.');
+    }
+
+    const ok = await pushRegistryJsonToGitHub(
+      JSON.stringify(payload, null, 2),
+      'manual',
+      'فایل رجیستری انتخاب‌شده با موفقیت روی GitHub آپلود شد.'
+    );
+    if (ok) {
+      setOnlineCheckStatus('آپلود فایل رجیستری انجام شد و آنلاین قابل مدیریت است.', 'ok');
+      input.value = '';
+    }
+  } catch (e) {
+    setOnlineCheckStatus(`آپلود فایل انجام نشد: ${escapeHtml(String(e.message || e))}`, 'err');
+  }
+}
+
+async function checkOnlineRegistryLive() {
+  const settings = collectPublishSettingsFromUI();
+  setPublishSettings(settings);
+
+  if (!settings.owner || !settings.repo || !settings.branch || !settings.path) {
+    setOnlineCheckStatus('برای چک آنلاین ابتدا Owner/Repo/Branch/Path را کامل کنید.', 'err');
+    return;
+  }
+
+  if (!navigator.onLine) {
+    setOnlineCheckStatus('اینترنت قطع است. چک آنلاین امکان‌پذیر نیست.', 'warn');
+    return;
+  }
+
+  const tokenInput = document.getElementById('pub-token');
+  const inlineToken = String(tokenInput?.value || '').trim();
+  const token = inlineToken || getGitHubTokenFromSession();
+  if (inlineToken) {
+    setGitHubTokenToSession(inlineToken);
+    if (tokenInput) tokenInput.value = '';
+  }
+
+  setOnlineCheckStatus('در حال چک زنده رجیستری آنلاین...', 'info');
+
+  const urls = getOnlineRegistryUrls(settings);
+  let onlineRegistry = null;
+  let onlineUrl = '';
+  const errors = [];
+
+  for (const url of urls) {
+    try {
+      const payload = await fetchRegistryCandidate(url, token);
+      if (payload) {
+        onlineRegistry = payload;
+        onlineUrl = url;
+        break;
+      }
+    } catch (e) {
+      errors.push(`${url} => ${String(e.message || e)}`);
+    }
+  }
+
+  if (!onlineRegistry) {
+    setOnlineCheckStatus(
+      `چک آنلاین ناموفق بود. هیچ منبع معتبری پاسخ نداد.<br><small>${escapeHtml(errors.slice(0, 3).join(' | ') || 'خطای نامشخص')}</small>`,
+      'err'
+    );
+    return;
+  }
+
+  const localRegistry = buildOnlineRegistry();
+  const localMap = new Map((localRegistry.licenses || []).map(x => [String(x.mid || '').trim(), x]));
+  const onlineMap = new Map((onlineRegistry.licenses || []).map(x => [String(x.mid || '').trim(), x]));
+
+  const missingMids = [];
+  const hashMismatch = [];
+  const statusMismatch = [];
+
+  for (const [mid, localRec] of localMap.entries()) {
+    const onlineRec = onlineMap.get(mid);
+    if (!onlineRec) {
+      missingMids.push(mid);
+      continue;
+    }
+
+    if (String(localRec.licenseHash || '') !== String(onlineRec.licenseHash || '')) {
+      hashMismatch.push(mid);
+    }
+    if (String(localRec.status || '') !== String(onlineRec.status || '')) {
+      statusMismatch.push(mid);
+    }
+  }
+
+  const onlineGenerated = escapeHtml(String(onlineRegistry.generatedAtFa || onlineRegistry.generatedAt || '-'));
+  const source = escapeHtml(onlineUrl);
+  const totalOnline = Number(onlineRegistry.total || (onlineRegistry.licenses || []).length || 0);
+
+  if (!missingMids.length && !hashMismatch.length && !statusMismatch.length) {
+    setOnlineCheckStatus(
+      `سازگاری کامل با نسخه مشتری ✅<br><small>منبع: ${source}</small><br><small>تعداد آنلاین: ${totalOnline} | زمان تولید رجیستری: ${onlineGenerated}</small>`,
+      'ok'
+    );
+    return;
+  }
+
+  setOnlineCheckStatus(
+    `نیاز به همگام‌سازی مشاهده شد ⚠️<br><small>Missing MID: ${missingMids.length} | Hash mismatch: ${hashMismatch.length} | Status mismatch: ${statusMismatch.length}</small><br><small>نمونه MIDهای مشکل‌دار: ${escapeHtml(missingMids.concat(hashMismatch, statusMismatch).slice(0, 5).join(' , ') || '-')}</small><br><small>منبع: ${source}</small>`,
+    'warn'
+  );
 }
 
 function scheduleAutoOnlinePublish() {

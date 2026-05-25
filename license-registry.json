@@ -1,11 +1,17 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-25T13:36:49.111Z",
-  "generatedAtFa": "۱۴۰۵/۰۳/۰۴",
+  "generatedAt": "2026-05-25T23:01:52.307Z",
+  "generatedAtFa": "۱۴۰۵/۰۳/۰۵",
   "timezone": "Asia/Tehran",
-  "today": "2026-05-25",
-  "total": 3,
+  "today": "2026-05-26",
+  "total": 4,
   "licenses": [
+    {
+      "mid": "KS-NBUR-WVL9",
+      "expDate": "2027-05-26",
+      "status": "active",
+      "licenseHash": "T8V8CL"
+    },
     {
       "mid": "KS-UMBH-F4KT",
       "expDate": "2027-05-25",

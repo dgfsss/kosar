@@ -316,7 +316,7 @@ tr:hover td { background: rgba(59,130,246,0.03); }
           <input id="pub-path" type="text" placeholder="license-registry.json" style="direction:ltr;">
         </div>
         <div class="fgrp" style="grid-column:1 / -1;">
-          <label>GitHub Token (فقط در Session مرورگر نگه داری می شود)</label>
+          <label>GitHub Token (یک‌بار ثبت می‌شود و بعد خودکار استفاده می‌شود)</label>
           <input id="pub-token" type="password" placeholder="ghp_..." autocomplete="off" style="direction:ltr;">
         </div>
       </div>
@@ -324,6 +324,10 @@ tr:hover td { background: rgba(59,130,246,0.03); }
         <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text); cursor:pointer;">
           <input id="pub-auto" type="checkbox">
           انتشار خودکار بعد از هر تغییر لایسنس
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text); cursor:pointer;">
+          <input id="pub-remember-token" type="checkbox" checked>
+          ذخیره توکن در همین مرورگر (یک‌بار برای همیشه)
         </label>
       </div>
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
@@ -361,6 +365,7 @@ const SALES_KEY = 'kt3_lic_sales';
 const SALES_BAK_KEY = 'kt3_lic_sales_bak';
 const PUBLISH_SETTINGS_KEY = 'kt3_publish_settings';
 const GITHUB_TOKEN_SESSION_KEY = 'kt3_github_token_session';
+const GITHUB_TOKEN_PERSIST_KEY = 'kt3_github_token_persist';
 const AUTO_PUBLISH_DEBOUNCE_MS = 1800;
 let autoPublishTimer = null;
 const memStore = {};
@@ -418,7 +423,8 @@ function getDefaultPublishSettings() {
     repo: 'kosar',
     branch: 'main',
     path: 'license-registry.json',
-    autoPublish: false
+    autoPublish: false,
+    rememberToken: true
   };
 }
 
@@ -430,7 +436,8 @@ function getPublishSettings() {
     repo: String(raw.repo || defaults.repo).trim(),
     branch: String(raw.branch || defaults.branch).trim(),
     path: String(raw.path || defaults.path).trim(),
-    autoPublish: !!raw.autoPublish
+    autoPublish: !!raw.autoPublish,
+    rememberToken: raw.rememberToken !== false
   };
 }
 
@@ -440,7 +447,8 @@ function setPublishSettings(settings) {
     repo: String(settings.repo || '').trim(),
     branch: String(settings.branch || 'main').trim(),
     path: String(settings.path || 'license-registry.json').trim(),
-    autoPublish: !!settings.autoPublish
+    autoPublish: !!settings.autoPublish,
+    rememberToken: settings.rememberToken !== false
   });
 }
 
@@ -477,14 +485,18 @@ function loadPublishSettingsUI() {
   const branchEl = document.getElementById('pub-branch');
   const pathEl = document.getElementById('pub-path');
   const autoEl = document.getElementById('pub-auto');
+  const rememberEl = document.getElementById('pub-remember-token');
   if (ownerEl) ownerEl.value = s.owner;
   if (repoEl) repoEl.value = s.repo;
   if (branchEl) branchEl.value = s.branch;
   if (pathEl) pathEl.value = s.path;
   if (autoEl) autoEl.checked = !!s.autoPublish;
+  if (rememberEl) rememberEl.checked = s.rememberToken !== false;
 }
 
 function getGitHubTokenFromSession() {
+  const persistent = SafeStore.getText(GITHUB_TOKEN_PERSIST_KEY, '');
+  if (persistent) return persistent;
   try {
     return sessionStorage.getItem(GITHUB_TOKEN_SESSION_KEY) || '';
   } catch (e) {
@@ -492,9 +504,14 @@ function getGitHubTokenFromSession() {
   }
 }
 
-function setGitHubTokenToSession(token) {
+function setGitHubTokenToSession(token, persistToken = true) {
+  const clean = String(token || '').trim();
+  if (!clean) return;
+  if (persistToken) {
+    SafeStore.setText(GITHUB_TOKEN_PERSIST_KEY, clean);
+  }
   try {
-    if (token) sessionStorage.setItem(GITHUB_TOKEN_SESSION_KEY, token);
+    sessionStorage.setItem(GITHUB_TOKEN_SESSION_KEY, clean);
   } catch (e) {}
 }
 
@@ -534,12 +551,14 @@ function collectPublishSettingsFromUI() {
   const branch = document.getElementById('pub-branch')?.value || 'main';
   const path = document.getElementById('pub-path')?.value || 'license-registry.json';
   const autoPublish = !!document.getElementById('pub-auto')?.checked;
+  const rememberToken = document.getElementById('pub-remember-token')?.checked !== false;
   return {
     owner: String(owner).trim(),
     repo: String(repo).trim(),
     branch: String(branch).trim() || 'main',
     path: String(path).trim() || 'license-registry.json',
-    autoPublish
+    autoPublish,
+    rememberToken
   };
 }
 
@@ -554,7 +573,7 @@ function savePublishSettingsFromUI() {
   const tokenInput = document.getElementById('pub-token');
   const token = String(tokenInput?.value || '').trim();
   if (token) {
-    setGitHubTokenToSession(token);
+    setGitHubTokenToSession(token, settings.rememberToken !== false);
     tokenInput.value = '';
   }
 
@@ -577,7 +596,7 @@ async function runSmartAutoSyncOneClick() {
   const tokenInput = document.getElementById('pub-token');
   const inlineToken = String(tokenInput?.value || '').trim();
   if (inlineToken) {
-    setGitHubTokenToSession(inlineToken);
+    setGitHubTokenToSession(inlineToken, settings.rememberToken !== false);
     tokenInput.value = '';
   }
 
@@ -666,7 +685,7 @@ async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', su
     return false;
   }
   if (inlineToken) {
-    setGitHubTokenToSession(inlineToken);
+    setGitHubTokenToSession(inlineToken, settings.rememberToken !== false);
     if (tokenInput) tokenInput.value = '';
   }
 
@@ -784,7 +803,7 @@ async function checkOnlineRegistryLive() {
   const inlineToken = String(tokenInput?.value || '').trim();
   const token = inlineToken || getGitHubTokenFromSession();
   if (inlineToken) {
-    setGitHubTokenToSession(inlineToken);
+    setGitHubTokenToSession(inlineToken, settings.rememberToken !== false);
     if (tokenInput) tokenInput.value = '';
   }
 

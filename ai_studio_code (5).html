@@ -996,6 +996,20 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
 <div id="toast"></div>
 
 <script>
+// Customer app must be distributed as offline file package, not used as hosted web page.
+if (location.hostname === 'dgfsss.github.io') {
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:#09111c;color:#f1f5f9;font-family:Tahoma,sans-serif;direction:rtl;">
+      <div style="max-width:680px;width:100%;background:#111c2a;border:1px solid #1e2d3d;border-radius:14px;padding:18px;line-height:2;">
+        <h2 style="margin:0 0 8px;font-size:20px;color:#f5c842;">نسخه مشتری فقط آفلاین ارائه می‌شود</h2>
+        <p style="margin:0 0 8px;color:#cbd5e1;">برای امنیت فروش، این صفحه آنلاین غیرفعال است. مشتری باید نسخه آفلاین برنامه را از مدیریت دریافت کند.</p>
+        <p style="margin:0;color:#94a3b8;">بررسی اعتبار لایسنس همچنان هنگام اتصال اینترنت از رجیستری آنلاین انجام می‌شود.</p>
+      </div>
+    </div>
+  `;
+  throw new Error('Hosted customer page disabled by policy.');
+}
+
 // ═══════════ STATE ═══════════
 const LS_KEYS = {
   contracts: 'kc3',

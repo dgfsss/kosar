@@ -628,7 +628,28 @@ function setManagerLockMessage(msg, ok) {
   el.textContent = msg || '';
 }
 
+function isManagerUnlocked() {
+  try {
+    return sessionStorage.getItem(MANAGER_ACCESS_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function enforceManagerOnlineMode() {
+  const lock = document.getElementById('manager-lock');
+  const app = document.getElementById('manager-app');
+  if (!navigator.onLine) {
+    if (app) app.style.display = 'none';
+    if (lock) lock.style.display = 'flex';
+    setManagerLockMessage('پنل مدیریت فقط در حالت آنلاین فعال است. اینترنت را وصل کنید.', false);
+    return false;
+  }
+  return true;
+}
+
 function openManagerApp() {
+  if (!enforceManagerOnlineMode()) return;
   const lock = document.getElementById('manager-lock');
   const app = document.getElementById('manager-app');
   if (lock) lock.style.display = 'none';
@@ -641,6 +662,11 @@ async function unlockManagerPanel() {
   const pass = String(input.value || '').trim();
   if (!pass) {
     setManagerLockMessage('رمز مدیریت را وارد کنید.', false);
+    return;
+  }
+
+  if (!navigator.onLine) {
+    setManagerLockMessage('برای ورود به پنل مدیریت باید اینترنت فعال باشد.', false);
     return;
   }
 
@@ -669,8 +695,8 @@ async function unlockManagerPanel() {
 }
 
 function initManagerAccess() {
-  let unlocked = false;
-  try { unlocked = sessionStorage.getItem(MANAGER_ACCESS_KEY) === '1'; } catch (e) {}
+  const unlocked = isManagerUnlocked();
+  enforceManagerOnlineMode();
   if (unlocked) {
     openManagerApp();
     return;
@@ -683,6 +709,18 @@ function initManagerAccess() {
     input.focus();
   }
 }
+
+window.addEventListener('online', () => {
+  if (isManagerUnlocked()) {
+    openManagerApp();
+  } else {
+    setManagerLockMessage('اتصال برقرار شد. اکنون می توانید وارد شوید.', true);
+  }
+});
+
+window.addEventListener('offline', () => {
+  enforceManagerOnlineMode();
+});
 
 function normalizeLicenseRecord(row) {
   if (!row || typeof row !== 'object') return null;
@@ -1161,12 +1199,6 @@ initManagerAccess();
 loadPublishSettingsUI();
 renderSales();
 auditLicenseDb();
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
-  });
-}
 </script>
 
 </body>

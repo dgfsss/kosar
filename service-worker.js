@@ -1,13 +1,17 @@
-const CACHE_VERSION = 'kosar-pwa-v1.2.0';
+const CACHE_VERSION = 'kosar-pwa-v1.3.0';
 const CORE_ASSETS = [
   './',
   './index.html',
   './ai_studio_code (5).html',
-  './ai_studio_code (6).html',
   './license-registry.json',
   './manifest.webmanifest',
   './service-worker.js'
 ];
+
+function isManagerPanelPath(url) {
+  const path = decodeURIComponent(url.pathname || '').toLowerCase();
+  return path.endsWith('/ai_studio_code (6).html') || path.endsWith('ai_studio_code (6).html');
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,6 +41,16 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (req.mode === 'navigate') {
+    if (isManagerPanelPath(url)) {
+      event.respondWith(
+        fetch(req).catch(() => new Response(
+          '<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><title>مدیریت فقط آنلاین</title><body style="font-family:tahoma,sans-serif;padding:24px;background:#0b1220;color:#fff;line-height:2">پنل مدیریت فقط در حالت آنلاین در دسترس است. لطفا اتصال اینترنت را برقرار کنید.</body></html>',
+          { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        ))
+      );
+      return;
+    }
+
     event.respondWith(
       fetch(req)
         .then((res) => {

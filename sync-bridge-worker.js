@@ -50,32 +50,53 @@ export default {
       'Content-Type': 'application/json'
     };
 
-    let sha = null;
-    const getRes = await fetch(`${baseUrl}?ref=${encodeURIComponent(branch)}`, {
-      headers: ghHeaders
-    });
+    const readCurrentSha = async () => {
+      const getRes = await fetch(`${baseUrl}?ref=${encodeURIComponent(branch)}`, {
+        headers: ghHeaders
+      });
 
-    if (getRes.ok) {
-      const current = await getRes.json();
-      sha = current?.sha || null;
-    } else if (getRes.status !== 404) {
+      if (getRes.ok) {
+        const current = await getRes.json();
+        return current?.sha || null;
+      }
+      if (getRes.status === 404) return null;
       const txt = await getRes.text();
-      return new Response(`GitHub GET failed: ${txt}`, { status: 502 });
+      throw new Error(`GitHub GET failed: ${txt}`);
+    };
+
+    const putWithSha = async (sha) => {
+      const content = btoa(unescape(encodeURIComponent(registryJson)));
+      const body = {
+        message: `sync online license registry (${new Date().toISOString()})`,
+        content,
+        branch
+      };
+      if (sha) body.sha = sha;
+      return fetch(baseUrl, {
+        method: 'PUT',
+        headers: ghHeaders,
+        body: JSON.stringify(body)
+      });
+    };
+
+    let sha;
+    try {
+      sha = await readCurrentSha();
+    } catch (e) {
+      return new Response(String(e.message || e), { status: 502 });
     }
 
-    const content = btoa(unescape(encodeURIComponent(registryJson)));
-    const body = {
-      message: `sync online license registry (${new Date().toISOString()})`,
-      content,
-      branch
-    };
-    if (sha) body.sha = sha;
+    let putRes = await putWithSha(sha);
 
-    const putRes = await fetch(baseUrl, {
-      method: 'PUT',
-      headers: ghHeaders,
-      body: JSON.stringify(body)
-    });
+    if (putRes.status === 409) {
+      // Retry once with refreshed SHA to resolve concurrent write conflict.
+      try {
+        sha = await readCurrentSha();
+      } catch (e) {
+        return new Response(String(e.message || e), { status: 502 });
+      }
+      putRes = await putWithSha(sha);
+    }
 
     if (!putRes.ok) {
       const txt = await putRes.text();

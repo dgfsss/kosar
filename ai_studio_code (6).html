@@ -784,31 +784,42 @@ async function pushRegistryJsonToGitHub(registryJson, triggerMode = 'manual', su
   setPublishStatus('در حال انتشار رجیستری آنلاین...', 'info');
 
   try {
-    let sha = null;
-    const getRes = await fetch(`${baseUrl}?ref=${encodeURIComponent(settings.branch)}`, { headers });
-    if (getRes.ok) {
-      const current = await getRes.json();
-      sha = current?.sha || null;
-    } else if (getRes.status !== 404) {
+    const readCurrentSha = async () => {
+      const getRes = await fetch(`${baseUrl}?ref=${encodeURIComponent(settings.branch)}`, { headers });
+      if (getRes.ok) {
+        const current = await getRes.json();
+        return current?.sha || null;
+      }
+      if (getRes.status === 404) return null;
       throw new Error(`GitHub GET failed (${getRes.status})`);
-    }
-
-    const body = {
-      message: `sync online license registry (${new Date().toISOString()})`,
-      content: encodeBase64Utf8(String(registryJson || '')),
-      branch: settings.branch
     };
-    if (sha) body.sha = sha;
 
-    const putRes = await fetch(baseUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(body)
-    });
+    const putWithSha = async (sha) => {
+      const body = {
+        message: `sync online license registry (${new Date().toISOString()})`,
+        content: encodeBase64Utf8(String(registryJson || '')),
+        branch: settings.branch
+      };
+      if (sha) body.sha = sha;
+      return fetch(baseUrl, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(body)
+      });
+    };
+
+    let sha = await readCurrentSha();
+    let putRes = await putWithSha(sha);
+
+    if (putRes.status === 409) {
+      // Resolve concurrent update conflicts by re-reading latest SHA and retrying once.
+      sha = await readCurrentSha();
+      putRes = await putWithSha(sha);
+    }
 
     if (!putRes.ok) {
       const errText = await putRes.text();
-      throw new Error(`GitHub PUT failed (${putRes.status}) ${errText.slice(0, 180)}`);
+      throw new Error(`GitHub PUT failed (${putRes.status}) ${errText.slice(0, 220)}`);
     }
 
     const nowFa = formatPersianDate(new Date());
